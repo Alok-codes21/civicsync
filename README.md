@@ -23,7 +23,7 @@ The SQLite database (server/civicsync.db) is created and seeded with Lucknow sam
 | Method | Path | Auth | What it does |
 |--------|------|------|--------------|
 | GET  | /api/health | - | liveness check |
-| POST | /api/login | - | body {username, password} -> {token, user}; bad credentials rejected |
+| POST | /api/login | - | body {username, password} -> {token, user}; bad credentials get 401; rate limited: 5 failed attempts per IP+username in 10 minutes -> 429 with Retry-After |
 | POST | /api/logout | Bearer | invalidates the token |
 | GET  | /api/me | Bearer | current user |
 | GET  | /api/complaints | - | list; optional ?status= and ?q= filters |
@@ -46,10 +46,12 @@ Every escalation writes a timeline event on the complaint.
 ## Security notes (demo-grade by design)
 
 - Passwords are hashed with Node's built-in crypto scrypt (per-user random salt, timing-safe compare) - no plaintext stored passwords, no extra dependencies.
-- Still demo auth: tokens are opaque random strings in a DB table, no rate limiting, no password reset flow, and the demo logins above are public by design.
+- Tokens are opaque random strings in a DB table and expire 12 hours after login; an expired token gets 401 and is deleted. Expired tokens are also purged once a minute.
+- Login is rate limited: 5 failed attempts per IP+username within 10 minutes locks further attempts until the window passes (429 with Retry-After). In-memory, so counters reset on restart.
+- Still demo auth: no password reset flow, no refresh tokens, and the demo logins above are public by design.
 - No email/SMS/WhatsApp notifications.
 - Sample data is fictional Lucknow complaints.
 
 ## Suggested next steps
 
-OTP login, token expiry + rate limiting, photo upload storage, SMS/WhatsApp alerts on status change, officer workload balancing, public upvoting, deployment on a free tier (Render/Railway).
+OTP login, password reset flow, photo upload storage, SMS/WhatsApp alerts on status change, officer workload balancing, public upvoting, deployment on a free tier (Render/Railway).
