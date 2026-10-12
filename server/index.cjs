@@ -1,5 +1,5 @@
-/* Sahayog demo backend - Express + SQLite (better-sqlite3), $0 stack.
-   API-only backend; no frontend assets are served.
+/* Sahayog demo backend - API-only (Express + SQLite / better-sqlite3), $0 stack.
+   REST API under /api; anything else returns a JSON 404.
    Auto-escalation engine: real, time-based sweep over deadlines. */
 const express = require('express')
 const path = require('path')
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS events (
   label TEXT NOT NULL, at TEXT NOT NULL, detail TEXT DEFAULT '', kind TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS users (
-  username TEXT PRIMARY KEY, password TEXT NOT NULL, name TEXT NOT NULL, role TEXT NOT NULL
+  username TEXT PRIMARY KEY, passhash TEXT NOT NULL, name TEXT NOT NULL, role TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS tokens (
   token TEXT PRIMARY KEY, username TEXT NOT NULL, createdTs INTEGER NOT NULL
@@ -62,11 +62,37 @@ if (db.prepare('SELECT COUNT(*) n FROM complaints').get().n === 0) {
   tx()
   console.log('seeded', SEED.length, 'complaints')
 }
+/* ---------- password hashing (Node built-in crypto, no deps) ---------- */
+function hashPassword(pw) {
+  const salt = crypto.randomBytes(16).toString('hex')
+  const hash = crypto.scryptSync(String(pw), salt, 64).toString('hex')
+  return `scrypt:${salt}:${hash}`
+}
+function verifyPassword(pw, stored) {
+  const parts = String(stored || '').split(':')
+  if (parts.length !== 3 || parts[0] !== 'scrypt') return false
+  const hash = crypto.scryptSync(String(pw), parts[1], 64)
+  const expected = Buffer.from(parts[2], 'hex')
+  return hash.length === expected.length && crypto.timingSafeEqual(hash, expected)
+}
+
+/* ---------- migrate old DBs: plaintext password column -> scrypt passhash ---------- */
+{
+  const cols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name)
+  if (cols.includes('password') && !cols.includes('passhash')) {
+    db.prepare('ALTER TABLE users ADD COLUMN passhash TEXT').run()
+    for (const u of db.prepare('SELECT username, password FROM users').all())
+      db.prepare('UPDATE users SET passhash=? WHERE username=?').run(hashPassword(u.password), u.username)
+    db.prepare('ALTER TABLE users DROP COLUMN password').run()
+    console.log('migrated users table: plaintext passwords re-hashed with scrypt')
+  }
+}
+
 if (db.prepare('SELECT COUNT(*) n FROM users').get().n === 0) {
   const insU = db.prepare('INSERT INTO users VALUES (?,?,?,?)')
-  insU.run('alok', 'demo123', 'Alok (Citizen, Gomti Nagar)', 'citizen')
-  insU.run('verma', 'demo123', 'R. Verma - JE, Zone 4', 'official')
-  console.log('seeded demo users')
+  insU.run('alok', hashPassword('demo123'), 'Alok (Citizen, Gomti Nagar)', 'citizen')
+  insU.run('verma', hashPassword('demo123'), 'R. Verma - JE, Zone 4', 'official')
+  console.log('seeded demo users (scrypt-hashed passwords)')
 }
 
 /* ---------- auto-escalation engine (real, time-based) ---------- */
@@ -139,7 +165,7 @@ app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now() }))
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body || {}
   const u = db.prepare('SELECT * FROM users WHERE username=?').get(String(username || '').toLowerCase())
-  if (!u || u.password !== String(password || '')) return res.status(401).json({ error: 'Invalid username or password' })
+  if (!u || !verifyPassword(password, u.passhash)) return res.status(401).json({ error: 'Invalid username or password' })
   const token = crypto.randomBytes(24).toString('hex')
   db.prepare('INSERT INTO tokens VALUES (?,?,?)').run(token, u.username, Date.now())
   res.json({ token, user: { username: u.username, name: u.name, role: u.role } })
@@ -201,7 +227,10 @@ app.post('/api/complaints/:id/status', (req, res) => {
   if (!allowed.includes(status)) return res.status(400).json({ error: 'invalid status' })
   if (status !== 'Reopened' && (!user || user.role !== 'official')) return res.status(403).json({ error: 'official login required' })
   if (status === 'Reopened' && !user) return res.status(403).json({ error: 'login required' })
-  db.prepare('UPDATE complaints SET status=?, latestUpdate=? WHERE id=?').run(status, note || c.latestUpdate, c.id)
+  db.prepare('UPDATE complaints SET status=?, latestUpdate=? WHERE id=?').run(status, note || `Status changed to ${status}.`, c.id)
+  const pos = db.prepare('SELECT COUNT(*) n FROM events WHERE complaintId=?').get(c.id).n
+  db.prepare('INSERT INTO events (complaintId,position,label,at,detail,kind) VALUES (?,?,?,?,?,?)')
+    .run(c.id, pos, `Status: ${status}`, 'Just now', note ? String(note).slice(0, 500) : `Marked ${status} by ${user ? user.name : 'citizen report'}.`, status === 'Resolved' ? 'done' : 'current')
   res.json({ complaint: toComplaint(db.prepare('SELECT * FROM complaints WHERE id=?').get(c.id)) })
 })
 
@@ -226,8 +255,8 @@ app.get('/api/stats/public', (req, res) => {
   res.json({ total, resolved, pending: total - resolved, overdue, escalated })
 })
 
-/* API-only service; frontend assets are not served by this repository. */
-app.use((req, res) => res.status(404).json({ error: 'Not found' }))
+/* API-only: everything outside /api gets a JSON 404 */
+app.use((req, res) => res.status(404).json({ error: 'Not found - this server is API-only (see /api/health)' }))
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => { sweep(); console.log(`Sahayog backend on http://127.0.0.1:${PORT}`) })
