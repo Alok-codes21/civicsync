@@ -1,4 +1,4 @@
-/* Sahayog demo backend - API-only (Express + SQLite / better-sqlite3), $0 stack.
+/* CivicSync demo backend - API-only (Express + SQLite / better-sqlite3), $0 stack.
    REST API under /api; anything else returns a JSON 404.
    Auto-escalation engine: real, time-based sweep over deadlines. */
 const express = require('express')
@@ -7,7 +7,7 @@ const crypto = require('crypto')
 const Database = require('better-sqlite3')
 const { SEED, ESCALATION_LADDER, DEPARTMENTS } = require('./seed.cjs')
 
-const DB_PATH = path.join(__dirname, 'sahayog.db')
+const DB_PATH = path.join(__dirname, 'civicsync.db')
 const db = new Database(DB_PATH)
 db.pragma('journal_mode = WAL')
 
@@ -259,4 +259,4 @@ app.get('/api/stats/public', (req, res) => {
 app.use((req, res) => res.status(404).json({ error: 'Not found - this server is API-only (see /api/health)' }))
 
 const PORT = process.env.PORT || 3001
-app.listen(PORT, () => { sweep(); console.log(`Sahayog backend on http://127.0.0.1:${PORT}`) })
+app.listen(PORT, () => { sweep(); console.log(`CivicSync backend on http://127.0.0.1:${PORT}`) })
