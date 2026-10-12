@@ -1,5 +1,5 @@
 /* Sahayog demo backend - Express + SQLite (better-sqlite3), $0 stack.
-   Serves the API on /api and the built frontend from ../dist.
+   API-only backend; no frontend assets are served.
    Auto-escalation engine: real, time-based sweep over deadlines. */
 const express = require('express')
 const path = require('path')
