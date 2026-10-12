@@ -1,4 +1,4 @@
 node_modules
-server/sahayog.db*
+server/civicsync.db*
 *.log
 .DS_Store
