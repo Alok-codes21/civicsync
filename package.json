@@ -2,7 +2,7 @@
   "name": "civicsync-backend",
   "version": "1.0.0",
   "private": false,
-  "description": "Sahayog civic issue escalation - demo backend (Express + SQLite, $0 stack)",
+  "description": "CivicSync civic issue escalation - demo backend (Express + SQLite, $0 stack)",
   "main": "server/index.cjs",
   "scripts": {
     "start": "node server/index.cjs"
