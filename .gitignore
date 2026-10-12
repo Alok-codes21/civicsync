@@ -1,0 +1,4 @@
+node_modules
+server/sahayog.db*
+*.log
+.DS_Store
