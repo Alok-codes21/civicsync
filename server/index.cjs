@@ -3,7 +3,6 @@
    Auto-escalation engine: real, time-based sweep over deadlines. */
 const express = require('express')
 const path = require('path')
-const fs = require('fs')
 const crypto = require('crypto')
 const Database = require('better-sqlite3')
 const { SEED, ESCALATION_LADDER, DEPARTMENTS } = require('./seed.cjs')
@@ -227,12 +226,8 @@ app.get('/api/stats/public', (req, res) => {
   res.json({ total, resolved, pending: total - resolved, overdue, escalated })
 })
 
-/* built frontend */
-const dist = path.join(__dirname, '..', 'dist')
-if (fs.existsSync(path.join(dist, 'index.html'))) {
-  app.use(express.static(dist))
-  app.get(/^(?!\/api\/).*/, (req, res) => res.sendFile(path.join(dist, 'index.html')))
-}
+/* API-only service; frontend assets are not served by this repository. */
+app.use((req, res) => res.status(404).json({ error: 'Not found' }))
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => { sweep(); console.log(`Sahayog backend on http://127.0.0.1:${PORT}`) })
