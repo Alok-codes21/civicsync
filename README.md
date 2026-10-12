@@ -1,6 +1,6 @@
-# Sahayog - backend (civic issue escalation demo)
+# CivicSync - backend (civic issue escalation demo)
 
-Express + better-sqlite3 (SQLite) REST API for the Sahayog civic complaint escalation app. This repository contains backend code only; it does not include or serve frontend assets.
+Express + better-sqlite3 (SQLite) REST API for the CivicSync civic complaint escalation app. 100% free stack, no paid APIs, no external services. API-only: the frontend lives in a separate repo (a teammate owns it); anything outside /api returns a JSON 404.
 
 ## Run it
 
@@ -9,7 +9,7 @@ npm install
 npm start            # http://localhost:3001 (PORT env var overrides)
 ```
 
-The SQLite database (server/sahayog.db) is created and seeded with Lucknow sample data automatically on first boot - it is gitignored and not part of the source.
+The SQLite database (server/civicsync.db) is created and seeded with Lucknow sample data automatically on first boot - it is gitignored and not part of the source. Existing databases from the earlier plaintext-password version are migrated automatically on boot (passwords are re-hashed with scrypt, old column dropped).
 
 ## Demo logins
 
@@ -29,8 +29,8 @@ The SQLite database (server/sahayog.db) is created and seeded with Lucknow sampl
 | GET  | /api/complaints | - | list; optional ?status= and ?q= filters |
 | GET  | /api/complaints/:id | - | track one complaint by acknowledgement number (e.g. SHG-2026-1042), case-insensitive; public |
 | POST | /api/complaints | optional | file a complaint {title, category, description, ward, landmark?, priority?} -> real acknowledgement number, rule-based auto-assignment to a department officer, priority-based deadline |
-| POST | /api/complaints/:id/status | official for normal status changes; any logged-in user may reopen | body {status, note?}; writes the updated complaint |
-| POST | /api/complaints/:id/events | No authentication in this demo | add a timeline event {label, detail, kind} |
+| POST | /api/complaints/:id/status | official for normal status changes; any logged-in user may reopen | body {status, note?}; accepts Submitted, Assigned, In Progress, Resolved or Reopened; writes a timeline event |
+| POST | /api/complaints/:id/events | - | add a timeline event {label, detail, kind}; open in this demo so anonymous citizens can attach evidence |
 | GET  | /api/stats/public | - | aggregate counts for the public dashboard |
 
 ## Auto-escalation engine (real, not simulated)
@@ -43,12 +43,13 @@ A sweep runs at boot, every 60 seconds, and on each read:
 
 Every escalation writes a timeline event on the complaint.
 
-## Honest limits (demo-grade by design)
+## Security notes (demo-grade by design)
 
-- Passwords are plain text in the local SQLite file; tokens are opaque random strings in a DB table. Not production auth.
+- Passwords are hashed with Node's built-in crypto scrypt (per-user random salt, timing-safe compare) - no plaintext stored passwords, no extra dependencies.
+- Still demo auth: tokens are opaque random strings in a DB table, no rate limiting, no password reset flow, and the demo logins above are public by design.
 - No email/SMS/WhatsApp notifications.
 - Sample data is fictional Lucknow complaints.
 
 ## Suggested next steps
 
-Password hashing (bcrypt) + OTP login, photo upload storage, SMS/WhatsApp alerts on status change, officer workload balancing, public upvoting, deployment on a free tier (Render/Railway).
+OTP login, token expiry + rate limiting, photo upload storage, SMS/WhatsApp alerts on status change, officer workload balancing, public upvoting, deployment on a free tier (Render/Railway).
