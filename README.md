@@ -1,6 +1,6 @@
 # Sahayog - backend (civic issue escalation demo)
 
-Express + better-sqlite3 (SQLite) REST API for the Sahayog civic complaint escalation app. 100% free stack, no paid APIs, no external services. Frontend lives in a separate repo (a teammate owns it); if a built frontend is placed in `../dist` this server will serve it too, otherwise it is API-only.
+Express + better-sqlite3 (SQLite) REST API for the Sahayog civic complaint escalation app. This repository contains backend code only; it does not include or serve frontend assets.
 
 ## Run it
 
@@ -29,7 +29,7 @@ The SQLite database (server/sahayog.db) is created and seeded with Lucknow sampl
 | GET  | /api/complaints | - | list; optional ?status= and ?q= filters |
 | GET  | /api/complaints/:id | - | track one complaint by acknowledgement number (e.g. SHG-2026-1042), case-insensitive; public |
 | POST | /api/complaints | optional | file a complaint {title, category, description, ward, landmark?, priority?} -> real acknowledgement number, rule-based auto-assignment to a department officer, priority-based deadline |
-| POST | /api/complaints/:id/status | official only | move status through valid transitions {status, note?}; citizens get 403; writes a timeline event |
+| POST | /api/complaints/:id/status | official for normal status changes; any logged-in user may reopen | body {status, note?}; writes the updated complaint |
 | POST | /api/complaints/:id/events | No authentication in this demo | add a timeline event {label, detail, kind} |
 | GET  | /api/stats/public | - | aggregate counts for the public dashboard |
 
