@@ -118,7 +118,10 @@ function sweep(now = Date.now()) {
   }
   return changes
 }
-setInterval(() => sweep(), 60 * 1000).unref()
+setInterval(() => {
+  sweep()
+  db.prepare('DELETE FROM tokens WHERE createdTs < ?').run(Date.now() - 12 * 60 * 60 * 1000)
+}, 60 * 1000).unref()
 
 /* ---------- helpers ---------- */
 const OFFICERS = {
@@ -152,22 +155,48 @@ const app = express()
 app.use(express.json({ limit: '1mb' }))
 app.use((req, res, next) => { res.setHeader('Access-Control-Allow-Origin', '*'); res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS'); if (req.method === 'OPTIONS') return res.sendStatus(204); next() })
 
+const TOKEN_TTL_MS = 12 * 60 * 60 * 1000 // sessions expire after 12 hours
 function authUser(req) {
   const h = req.headers.authorization || ''
   const tok = h.startsWith('Bearer ') ? h.slice(7) : null
   if (!tok) return null
-  const row = db.prepare('SELECT u.username,u.name,u.role FROM tokens t JOIN users u ON u.username=t.username WHERE t.token=?').get(tok)
-  return row || null
+  const row = db.prepare('SELECT t.createdTs, u.username,u.name,u.role FROM tokens t JOIN users u ON u.username=t.username WHERE t.token=?').get(tok)
+  if (!row) return null
+  if (Date.now() - row.createdTs > TOKEN_TTL_MS) {
+    db.prepare('DELETE FROM tokens WHERE token=?').run(tok)
+    return null // expired token -> 401 downstream
+  }
+  return { username: row.username, name: row.name, role: row.role }
 }
 
 app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now() }))
 
+/* login rate limiting: max 5 failed attempts per IP+username per 10 minutes (in-memory, resets on restart) */
+const LOGIN_WINDOW_MS = 10 * 60 * 1000
+const LOGIN_MAX_FAILURES = 5
+const loginFailures = new Map() // key "ip|username" -> array of failure timestamps
+
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body || {}
-  const u = db.prepare('SELECT * FROM users WHERE username=?').get(String(username || '').toLowerCase())
-  if (!u || !verifyPassword(password, u.passhash)) return res.status(401).json({ error: 'Invalid username or password' })
+  const uname = String(username || '').toLowerCase()
+  const key = `${req.ip || req.socket.remoteAddress || 'unknown'}|${uname}`
+  const now = Date.now()
+  const recent = (loginFailures.get(key) || []).filter(ts => now - ts < LOGIN_WINDOW_MS)
+  if (recent.length >= LOGIN_MAX_FAILURES) {
+    loginFailures.set(key, recent)
+    const retryAfterSec = Math.ceil((recent[0] + LOGIN_WINDOW_MS - now) / 1000)
+    res.setHeader('Retry-After', retryAfterSec)
+    return res.status(429).json({ error: `Too many failed login attempts. Try again in ${Math.ceil(retryAfterSec / 60)} minute(s).`, retryAfterSec })
+  }
+  const u = db.prepare('SELECT * FROM users WHERE username=?').get(uname)
+  if (!u || !verifyPassword(password, u.passhash)) {
+    recent.push(now)
+    loginFailures.set(key, recent)
+    return res.status(401).json({ error: 'Invalid username or password' })
+  }
+  loginFailures.delete(key)
   const token = crypto.randomBytes(24).toString('hex')
-  db.prepare('INSERT INTO tokens VALUES (?,?,?)').run(token, u.username, Date.now())
+  db.prepare('INSERT INTO tokens VALUES (?,?,?)').run(token, u.username, now)
   res.json({ token, user: { username: u.username, name: u.name, role: u.role } })
 })
 app.post('/api/logout', (req, res) => {
