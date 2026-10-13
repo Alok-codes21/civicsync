@@ -1,0 +1,744 @@
+{
+  "checkedAt": "2026-10-13",
+  "verification": "official_list_derived_unverified",
+  "sources": [
+    "https://ghaziabadnagarnigam.in/staffList.aspx",
+    "https://ghaziabadnagarnigam.in/zones-and-wards.aspx"
+  ],
+  "sourceEffectiveDate": null,
+  "officers": [
+    {
+      "name": "श्री अनूप कुमार",
+      "designation": "AE",
+      "sourceDesignation": "सहायक अभियंता (वार्ड 006ए, 008ए, 009ए, 011ए, 012ए, 013ए, 017ए, 019ए, 031ए, 032ए, 049ए, 050ए, 059ए, 069ए, 088ए, 092ए, 093ए, 095ए, 096ए, 022ए, 033ए, 039ए, 052ए, 021ए, 036ए, 040ए, 041ए, 043ए, 054ए, 061ए, 068ए, 072ए, 074ए, 094ए, 097)",
+      "wardTokens": [
+        "006ए",
+        "008ए",
+        "009ए",
+        "011ए",
+        "012ए",
+        "013ए",
+        "017ए",
+        "019ए",
+        "031ए",
+        "032ए",
+        "049ए",
+        "050ए",
+        "059ए",
+        "069ए",
+        "088ए",
+        "092ए",
+        "093ए",
+        "095ए",
+        "096ए",
+        "022ए",
+        "033ए",
+        "039ए",
+        "052ए",
+        "021ए",
+        "036ए",
+        "040ए",
+        "041ए",
+        "043ए",
+        "054ए",
+        "061ए",
+        "068ए",
+        "072ए",
+        "074ए",
+        "094ए",
+        "097"
+      ],
+      "wardNumbers": [
+        6,
+        8,
+        9,
+        11,
+        12,
+        13,
+        17,
+        19,
+        31,
+        32,
+        49,
+        50,
+        59,
+        69,
+        88,
+        92,
+        93,
+        95,
+        96,
+        22,
+        33,
+        39,
+        52,
+        21,
+        36,
+        40,
+        41,
+        43,
+        54,
+        61,
+        68,
+        72,
+        74,
+        94,
+        97
+      ]
+    },
+    {
+      "name": "श्री देवी सिंह",
+      "designation": "AE",
+      "sourceDesignation": "सहायक अभियंता (वार्ड 003ए, 004ए, 023ए, 025ए, 051ए, 055ए, 001ए, 002ए, 007ए, 014ए, 015ए, 026ए, 027ए, 035ए, 048ए, 058)",
+      "wardTokens": [
+        "003ए",
+        "004ए",
+        "023ए",
+        "025ए",
+        "051ए",
+        "055ए",
+        "001ए",
+        "002ए",
+        "007ए",
+        "014ए",
+        "015ए",
+        "026ए",
+        "027ए",
+        "035ए",
+        "048ए",
+        "058"
+      ],
+      "wardNumbers": [
+        3,
+        4,
+        23,
+        25,
+        51,
+        55,
+        1,
+        2,
+        7,
+        14,
+        15,
+        26,
+        27,
+        35,
+        48,
+        58
+      ]
+    },
+    {
+      "name": "श्री गणेशी लाल",
+      "designation": "AE",
+      "sourceDesignation": "सहायक अभियंता (वार्ड 057ए, 076ए, 077ए, 079ए, 081ए, 087ए, 089ए, 098ए, 099ए, 100ए, 034ए, 038ए, 044ए, 060ए, 090ए, 005ए, 010ए, 020ए, 028ए, 029ए, 037ए, 045ए, 063ए, 064ए, 066ए, 070ए, 073ए, 075ए, 078ए, 080ए, 082ए, 083ए, 085ए, 086)",
+      "wardTokens": [
+        "057ए",
+        "076ए",
+        "077ए",
+        "079ए",
+        "081ए",
+        "087ए",
+        "089ए",
+        "098ए",
+        "099ए",
+        "100ए",
+        "034ए",
+        "038ए",
+        "044ए",
+        "060ए",
+        "090ए",
+        "005ए",
+        "010ए",
+        "020ए",
+        "028ए",
+        "029ए",
+        "037ए",
+        "045ए",
+        "063ए",
+        "064ए",
+        "066ए",
+        "070ए",
+        "073ए",
+        "075ए",
+        "078ए",
+        "080ए",
+        "082ए",
+        "083ए",
+        "085ए",
+        "086"
+      ],
+      "wardNumbers": [
+        57,
+        76,
+        77,
+        79,
+        81,
+        87,
+        89,
+        98,
+        99,
+        100,
+        34,
+        38,
+        44,
+        60,
+        90,
+        5,
+        10,
+        20,
+        28,
+        29,
+        37,
+        45,
+        63,
+        64,
+        66,
+        70,
+        73,
+        75,
+        78,
+        80,
+        82,
+        83,
+        85,
+        86
+      ]
+    },
+    {
+      "name": "श्री श्याम सिंह",
+      "designation": "AE",
+      "sourceDesignation": "सहायक अभियंता (वार्ड 016ए, 018ए, 024ए, 030ए, 042ए, 046ए, 047ए, 053ए, 056ए, 062ए, 065ए, 067ए, 071ए, 084ए, 091)",
+      "wardTokens": [
+        "016ए",
+        "018ए",
+        "024ए",
+        "030ए",
+        "042ए",
+        "046ए",
+        "047ए",
+        "053ए",
+        "056ए",
+        "062ए",
+        "065ए",
+        "067ए",
+        "071ए",
+        "084ए",
+        "091"
+      ],
+      "wardNumbers": [
+        16,
+        18,
+        24,
+        30,
+        42,
+        46,
+        47,
+        53,
+        56,
+        62,
+        65,
+        67,
+        71,
+        84,
+        91
+      ]
+    },
+    {
+      "name": "श्रीमती पूजा सिंह",
+      "designation": "JE",
+      "sourceDesignation": "अवर अभियंता (वार्ड 057ए, 076ए, 077ए, 079ए, 081ए, 087ए, 089ए, 098ए, 099ए, 100)",
+      "wardTokens": [
+        "057ए",
+        "076ए",
+        "077ए",
+        "079ए",
+        "081ए",
+        "087ए",
+        "089ए",
+        "098ए",
+        "099ए",
+        "100"
+      ],
+      "wardNumbers": [
+        57,
+        76,
+        77,
+        79,
+        81,
+        87,
+        89,
+        98,
+        99,
+        100
+      ]
+    },
+    {
+      "name": "श्रीमती प्रीती बंसल",
+      "designation": "JE",
+      "sourceDesignation": "अवर अभियंता (वार्ड 022ए, 033ए, 039ए, 052ए, 003ए, 004ए, 023ए, 025ए, 051ए, 055)",
+      "wardTokens": [
+        "022ए",
+        "033ए",
+        "039ए",
+        "052ए",
+        "003ए",
+        "004ए",
+        "023ए",
+        "025ए",
+        "051ए",
+        "055"
+      ],
+      "wardNumbers": [
+        22,
+        33,
+        39,
+        52,
+        3,
+        4,
+        23,
+        25,
+        51,
+        55
+      ]
+    },
+    {
+      "name": "श्री संजय गंगवार",
+      "designation": "JE",
+      "sourceDesignation": "अवर अभियंता (वार्ड 021ए, 036ए, 040ए, 041ए, 043ए, 054ए, 061ए, 068ए, 072ए, 074ए, 094ए, 097ए, 034ए, 038ए, 044ए, 060ए, 090)",
+      "wardTokens": [
+        "021ए",
+        "036ए",
+        "040ए",
+        "041ए",
+        "043ए",
+        "054ए",
+        "061ए",
+        "068ए",
+        "072ए",
+        "074ए",
+        "094ए",
+        "097ए",
+        "034ए",
+        "038ए",
+        "044ए",
+        "060ए",
+        "090"
+      ],
+      "wardNumbers": [
+        21,
+        36,
+        40,
+        41,
+        43,
+        54,
+        61,
+        68,
+        72,
+        74,
+        94,
+        97,
+        34,
+        38,
+        44,
+        60,
+        90
+      ]
+    },
+    {
+      "name": "श्री विनोद कुमार",
+      "designation": "JE",
+      "sourceDesignation": "अवर अभियंता (वार्ड 005ए, 010ए, 020ए, 028ए, 029ए, 037ए, 045ए, 063ए, 064ए, 066ए, 070ए, 073ए, 075ए, 078ए, 080ए, 082ए, 083ए, 085ए, 086)",
+      "wardTokens": [
+        "005ए",
+        "010ए",
+        "020ए",
+        "028ए",
+        "029ए",
+        "037ए",
+        "045ए",
+        "063ए",
+        "064ए",
+        "066ए",
+        "070ए",
+        "073ए",
+        "075ए",
+        "078ए",
+        "080ए",
+        "082ए",
+        "083ए",
+        "085ए",
+        "086"
+      ],
+      "wardNumbers": [
+        5,
+        10,
+        20,
+        28,
+        29,
+        37,
+        45,
+        63,
+        64,
+        66,
+        70,
+        73,
+        75,
+        78,
+        80,
+        82,
+        83,
+        85,
+        86
+      ]
+    }
+  ],
+  "zoneCandidates": {
+    "6": [
+      "CITY ZONE",
+      "VIJAY NAGAR ZONE"
+    ],
+    "8": [
+      "CITY ZONE"
+    ],
+    "9": [
+      "CITY ZONE",
+      "MOHAN NAGAR ZONE"
+    ],
+    "11": [
+      "CITY ZONE"
+    ],
+    "12": [
+      "CITY ZONE"
+    ],
+    "13": [
+      "CITY ZONE"
+    ],
+    "16": [
+      "CITY ZONE",
+      "KAVI NAGAR ZONE"
+    ],
+    "17": [
+      "CITY ZONE",
+      "MOHAN NAGAR ZONE"
+    ],
+    "19": [
+      "CITY ZONE"
+    ],
+    "22": [
+      "CITY ZONE",
+      "KAVI NAGAR ZONE"
+    ],
+    "31": [
+      "CITY ZONE",
+      "MOHAN NAGAR ZONE"
+    ],
+    "32": [
+      "CITY ZONE"
+    ],
+    "33": [
+      "CITY ZONE",
+      "KAVI NAGAR ZONE"
+    ],
+    "39": [
+      "CITY ZONE"
+    ],
+    "46": [
+      "CITY ZONE",
+      "KAVI NAGAR ZONE",
+      "MOHAN NAGAR ZONE"
+    ],
+    "49": [
+      "CITY ZONE",
+      "VASUNDHARA ZONE"
+    ],
+    "50": [
+      "CITY ZONE"
+    ],
+    "52": [
+      "CITY ZONE"
+    ],
+    "59": [
+      "CITY ZONE",
+      "KAVI NAGAR ZONE"
+    ],
+    "61": [
+      "CITY ZONE",
+      "VASUNDHARA ZONE"
+    ],
+    "62": [
+      "CITY ZONE",
+      "KAVI NAGAR ZONE"
+    ],
+    "69": [
+      "CITY ZONE",
+      "MOHAN NAGAR ZONE"
+    ],
+    "88": [
+      "CITY ZONE"
+    ],
+    "92": [
+      "CITY ZONE"
+    ],
+    "93": [
+      "CITY ZONE"
+    ],
+    "95": [
+      "CITY ZONE"
+    ],
+    "96": [
+      "CITY ZONE"
+    ],
+    "18": [
+      "KAVI NAGAR ZONE",
+      "VIJAY NAGAR ZONE"
+    ],
+    "21": [
+      "KAVI NAGAR ZONE",
+      "VASUNDHARA ZONE"
+    ],
+    "24": [
+      "KAVI NAGAR ZONE",
+      "MOHAN NAGAR ZONE"
+    ],
+    "30": [
+      "KAVI NAGAR ZONE"
+    ],
+    "34": [
+      "KAVI NAGAR ZONE",
+      "MOHAN NAGAR ZONE",
+      "VASUNDHARA ZONE"
+    ],
+    "35": [
+      "KAVI NAGAR ZONE",
+      "VIJAY NAGAR ZONE"
+    ],
+    "38": [
+      "KAVI NAGAR ZONE",
+      "MOHAN NAGAR ZONE"
+    ],
+    "42": [
+      "KAVI NAGAR ZONE"
+    ],
+    "47": [
+      "KAVI NAGAR ZONE"
+    ],
+    "53": [
+      "KAVI NAGAR ZONE"
+    ],
+    "56": [
+      "KAVI NAGAR ZONE"
+    ],
+    "64": [
+      "KAVI NAGAR ZONE",
+      "MOHAN NAGAR ZONE"
+    ],
+    "65": [
+      "KAVI NAGAR ZONE"
+    ],
+    "67": [
+      "KAVI NAGAR ZONE"
+    ],
+    "68": [
+      "KAVI NAGAR ZONE",
+      "VASUNDHARA ZONE"
+    ],
+    "71": [
+      "KAVI NAGAR ZONE"
+    ],
+    "79": [
+      "KAVI NAGAR ZONE",
+      "VASUNDHARA ZONE"
+    ],
+    "84": [
+      "KAVI NAGAR ZONE"
+    ],
+    "91": [
+      "KAVI NAGAR ZONE"
+    ],
+    "94": [
+      "KAVI NAGAR ZONE",
+      "VASUNDHARA ZONE"
+    ],
+    "5": [
+      "MOHAN NAGAR ZONE"
+    ],
+    "10": [
+      "MOHAN NAGAR ZONE"
+    ],
+    "14": [
+      "MOHAN NAGAR ZONE",
+      "VIJAY NAGAR ZONE"
+    ],
+    "20": [
+      "MOHAN NAGAR ZONE"
+    ],
+    "25": [
+      "MOHAN NAGAR ZONE",
+      "VIJAY NAGAR ZONE"
+    ],
+    "28": [
+      "MOHAN NAGAR ZONE"
+    ],
+    "29": [
+      "MOHAN NAGAR ZONE",
+      "VASUNDHARA ZONE"
+    ],
+    "37": [
+      "MOHAN NAGAR ZONE"
+    ],
+    "40": [
+      "MOHAN NAGAR ZONE",
+      "VASUNDHARA ZONE"
+    ],
+    "44": [
+      "MOHAN NAGAR ZONE"
+    ],
+    "45": [
+      "MOHAN NAGAR ZONE",
+      "VIJAY NAGAR ZONE"
+    ],
+    "48": [
+      "MOHAN NAGAR ZONE",
+      "VIJAY NAGAR ZONE"
+    ],
+    "60": [
+      "MOHAN NAGAR ZONE"
+    ],
+    "63": [
+      "MOHAN NAGAR ZONE"
+    ],
+    "66": [
+      "MOHAN NAGAR ZONE"
+    ],
+    "70": [
+      "MOHAN NAGAR ZONE"
+    ],
+    "72": [
+      "MOHAN NAGAR ZONE",
+      "VASUNDHARA ZONE"
+    ],
+    "73": [
+      "MOHAN NAGAR ZONE"
+    ],
+    "75": [
+      "MOHAN NAGAR ZONE"
+    ],
+    "78": [
+      "MOHAN NAGAR ZONE"
+    ],
+    "80": [
+      "MOHAN NAGAR ZONE"
+    ],
+    "82": [
+      "MOHAN NAGAR ZONE"
+    ],
+    "83": [
+      "MOHAN NAGAR ZONE"
+    ],
+    "85": [
+      "MOHAN NAGAR ZONE"
+    ],
+    "86": [
+      "MOHAN NAGAR ZONE"
+    ],
+    "90": [
+      "MOHAN NAGAR ZONE"
+    ],
+    "36": [
+      "VASUNDHARA ZONE"
+    ],
+    "41": [
+      "VASUNDHARA ZONE"
+    ],
+    "43": [
+      "VASUNDHARA ZONE"
+    ],
+    "54": [
+      "VASUNDHARA ZONE"
+    ],
+    "57": [
+      "VASUNDHARA ZONE"
+    ],
+    "58": [
+      "VASUNDHARA ZONE",
+      "VIJAY NAGAR ZONE"
+    ],
+    "74": [
+      "VASUNDHARA ZONE"
+    ],
+    "76": [
+      "VASUNDHARA ZONE"
+    ],
+    "77": [
+      "VASUNDHARA ZONE"
+    ],
+    "81": [
+      "VASUNDHARA ZONE"
+    ],
+    "87": [
+      "VASUNDHARA ZONE"
+    ],
+    "89": [
+      "VASUNDHARA ZONE"
+    ],
+    "97": [
+      "VASUNDHARA ZONE"
+    ],
+    "98": [
+      "VASUNDHARA ZONE"
+    ],
+    "99": [
+      "VASUNDHARA ZONE"
+    ],
+    "100": [
+      "VASUNDHARA ZONE"
+    ],
+    "1": [
+      "VIJAY NAGAR ZONE"
+    ],
+    "2": [
+      "VIJAY NAGAR ZONE"
+    ],
+    "3": [
+      "VIJAY NAGAR ZONE"
+    ],
+    "4": [
+      "VIJAY NAGAR ZONE"
+    ],
+    "7": [
+      "VIJAY NAGAR ZONE"
+    ],
+    "15": [
+      "VIJAY NAGAR ZONE"
+    ],
+    "23": [
+      "VIJAY NAGAR ZONE"
+    ],
+    "26": [
+      "VIJAY NAGAR ZONE"
+    ],
+    "27": [
+      "VIJAY NAGAR ZONE"
+    ],
+    "51": [
+      "VIJAY NAGAR ZONE"
+    ],
+    "55": [
+      "VIJAY NAGAR ZONE"
+    ]
+  },
+  "excludedZoneRows": [
+    {
+      "ward": "880",
+      "zone": "MOHAN NAGAR ZONE"
+    }
+  ],
+  "limitations": [
+    "No effective date on source pages",
+    "A/ए suffix meaning and numbering alignment with SBM 2022 polygons unverified",
+    "Multiple zone entries for some wards; never select a zone automatically",
+    "Names only; no phone numbers or local account bindings",
+    "JE coverage is partial; departments cannot be inferred from ward overlap",
+    "Not an authorization, current jurisdiction registry or notification channel"
+  ]
+}
