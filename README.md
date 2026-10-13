@@ -141,3 +141,11 @@ Mobile OTP flow is implemented with a provider-pluggable sender, hashed codes, e
 ### Mobile verification
 
 `POST /api/phone/otp/request`, `POST /api/phone/otp/verify`, `GET /api/phone/status` require a claimed citizen login. This links/verifies a number; phone-only signup/login and recovery are not implemented. Hashed codes expire in 5 minutes with 5 attempts, 60-second resend cooldown and persistent hourly limits. SMS mode needs an explicitly configured sender+private pepper; dev mode never sets the real flag. Aadhaar is out of scope. Provider setup/details: `docs/PHONE_OTP.md`.
+
+## Latest free/local completion pass
+
+- Read-only Ghaziabad officer hints: reviewer/supervisor `GET /api/jurisdictions/officer-hints?ward=38`. AE lists cover 100 wards; JE lists 56. Names only, no phone numbers or account bindings. All remain unverified and manual-review-only. Source A/ए numbering may not match 2022 polygons. Multiple zones are retained, not guessed.
+- Opt-in Twilio Messaging sender: see `docs/COMPLETION_HANDOFF.md`. Disabled by default, mock-tested only. No SMS was sent or account created.
+- Local labelled-photo evaluation: `node scripts/evaluate-detector.cjs /private/photos/manifest.json`. No real civic accuracy result exists yet.
+- 66 automated tests pass with checksum-pinned detector installed (synthetic model smoke is not accuracy testing).
+- Backend API only. Teammate frontend integration and live deployment are not verified.
