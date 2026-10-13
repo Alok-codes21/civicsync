@@ -1,0 +1,6 @@
+// Operator-only local account provisioning. Password through stdin, never command arguments.
+const crypto=require('crypto')
+if(process.argv.length!==5||!['citizen','official','reviewer','supervisor','intake'].includes(process.argv[4])){console.error('Usage: node scripts/provision-user.cjs username display-name role < password-file');process.exit(1)}
+const [username,name,role]=process.argv.slice(2)
+let input='';process.stdin.setEncoding('utf8');process.stdin.on('data',c=>{input+=c;if(input.length>512){console.error('Password input too long');process.exit(1)}})
+process.stdin.on('end',()=>{const pw=input.replace(/\r?\n$/,'');if(!/^[a-z0-9_-]{3,60}$/.test(username)||pw.length<12){console.error('Lowercase username and 12+ character password required');process.exitCode=1;return}const {db,stop}=require('../server/index.cjs');try{const salt=crypto.randomBytes(16).toString('hex'),hash=crypto.scryptSync(pw,salt,64).toString('hex');db.prepare('INSERT INTO users(username,passhash,name,role) VALUES (?,?,?,?)').run(username,`scrypt:${salt}:${hash}`,name,role);console.log('Local account created:',username,role)}catch(e){console.error('Account creation failed; existing accounts are not overwritten');process.exitCode=1}finally{stop()}})
