@@ -6,6 +6,7 @@
   "main": "server/index.cjs",
   "scripts": {
     "start": "node server/index.cjs",
+    "setup:detector": "node scripts/download-model.cjs",
     "test": "node --test test/*.cjs"
   },
   "engines": {
