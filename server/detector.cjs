@@ -1,12 +1,14 @@
 // Optional local ONNX inference. Never downloads or sends a citizen image to a service.
-const fs=require('fs'),crypto=require('crypto'),sharp=require('sharp')
+const fs=require('fs'),path=require('path'),crypto=require('crypto'),sharp=require('sharp')
+const defaultModel=path.join(__dirname,'..','models','ai-image-detection.onnx')
+function modelFile(){if(process.env.AI_DETECTOR==='off')return null;if(process.env.AI_MODEL_PATH)return process.env.AI_MODEL_PATH;return fs.existsSync(defaultModel)?defaultModel:null}
 const revision='e3cfe99f2841930a040a6281682c10c989965603'
 let session=null,busy=false,loadPromise=null,state='not_connected'
-function enabled(){return Boolean(process.env.AI_MODEL_PATH)}
+function enabled(){return Boolean(modelFile())}
 function status(){return enabled()?state:'not_connected'}
 async function load(){
  if(!enabled())return null
- if(!loadPromise)loadPromise=(async()=>{const file=process.env.AI_MODEL_PATH;if(!fs.existsSync(file))throw new Error('Model missing');const hash=crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');if(hash!==require('../docs/model-provenance.json').sha256)throw new Error('Model checksum mismatch');const ort=require('onnxruntime-node');session=await ort.InferenceSession.create(file,{executionProviders:['cpu'],intraOpNumThreads:2});state='local_experimental_unvalidated';return session})().catch(()=>{state='unavailable_model_load_failed';return null})
+ if(!loadPromise)loadPromise=(async()=>{const file=modelFile();if(!fs.existsSync(file))throw new Error('Model missing');const hash=crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');if(hash!==require('../docs/model-provenance.json').sha256)throw new Error('Model checksum mismatch');const ort=require('onnxruntime-node');session=await ort.InferenceSession.create(file,{executionProviders:['cpu'],intraOpNumThreads:2});state='local_experimental_unvalidated';return session})().catch(()=>{state='unavailable_model_load_failed';return null})
  return loadPromise
 }
 async function predict(bytes){
