@@ -50,6 +50,22 @@ function verifyPassword(pw, stored) {
   return hash.length === expected.length && crypto.timingSafeEqual(hash, expected)
 }
 
+/* Async variant for the login path: scrypt runs off the event loop so a burst of
+   login attempts cannot block other API requests. Sync verify stays for boot-time
+   migration/seeding only. */
+const scryptAsync = (pw, salt) => new Promise((resolve, reject) => crypto.scrypt(pw, salt, 64, (err, hash) => err ? reject(err) : resolve(hash)))
+async function verifyPasswordAsync(pw, stored) {
+  const parts = String(stored || '').split(':')
+  if (parts.length !== 3 || parts[0] !== 'scrypt') return false
+  const hash = await scryptAsync(String(pw), parts[1])
+  const expected = Buffer.from(parts[2], 'hex')
+  return hash.length === expected.length && crypto.timingSafeEqual(hash, expected)
+}
+
+/* Bearer tokens are stored as SHA-256 hashes: a database copy alone cannot be
+   replayed as a live session. The raw token is only ever returned to the client. */
+const hashToken = t => crypto.createHash('sha256').update(t).digest('hex')
+
 /* ---------- migrate old DBs: plaintext password column -> scrypt passhash ---------- */
 {
   const cols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name)
@@ -61,6 +77,10 @@ function verifyPassword(pw, stored) {
     console.log('migrated users table: plaintext passwords re-hashed with scrypt')
   }
 }
+
+/* migrate legacy plaintext bearer tokens to hashed storage; sessions stay valid */
+for (const row of db.prepare('SELECT token FROM tokens').all())
+  if (!/^[0-9a-f]{64}$/.test(row.token)) db.prepare('UPDATE tokens SET token=? WHERE token=?').run(hashToken(row.token), row.token)
 
 const PRIORITY_DAYS = { Critical: 2, High: 5, Medium: 7, Low: 10 }
 function fmtDate(ts) { return new Date(ts).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric', timeZone:'Asia/Calcutta' }) }
@@ -93,10 +113,10 @@ function authUser(req) {
   const h = req.headers.authorization || ''
   const tok = h.startsWith('Bearer ') ? h.slice(7) : null
   if (!tok) return null
-  const row = db.prepare('SELECT t.createdTs, u.username,u.name,u.role FROM tokens t JOIN users u ON u.username=t.username WHERE t.token=?').get(tok)
+  const row = db.prepare('SELECT t.createdTs, u.username,u.name,u.role FROM tokens t JOIN users u ON u.username=t.username WHERE t.token=?').get(hashToken(tok))
   if (!row) return null
   if (Date.now() - row.createdTs > TOKEN_TTL_MS) {
-    db.prepare('DELETE FROM tokens WHERE token=?').run(tok)
+    db.prepare('DELETE FROM tokens WHERE token=?').run(hashToken(tok))
     return null // expired token -> 401 downstream
   }
   return { username: row.username, name: row.name, role: row.role }
@@ -104,14 +124,31 @@ function authUser(req) {
 
 app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now() }))
 
-/* login rate limiting: max 5 failed attempts per IP+username per 10 minutes (in-memory, resets on restart) */
+/* login rate limiting: max 5 failed attempts per IP+username per 10 minutes.
+   In-memory and bounded (oldest keys evicted past LOGIN_FAILURE_MAP_MAX); limits
+   reset on restart - fine for this prototype, not sufficient for public deployment. */
 const LOGIN_WINDOW_MS = 10 * 60 * 1000
 const LOGIN_MAX_FAILURES = 5
+const LOGIN_FAILURE_MAP_MAX = 1000
+const LOGIN_USERNAME_MAX = 64
+const LOGIN_PASSWORD_MAX = 128
 const loginFailures = new Map() // key "ip|username" -> array of failure timestamps
+function recordFailure(key, now) {
+  const recent = (loginFailures.get(key) || []).filter(ts => now - ts < LOGIN_WINDOW_MS)
+  recent.push(now)
+  if (!loginFailures.has(key) && loginFailures.size >= LOGIN_FAILURE_MAP_MAX)
+    for (const old of loginFailures.keys()) { loginFailures.delete(old); if (loginFailures.size < LOGIN_FAILURE_MAP_MAX) break }
+  loginFailures.set(key, recent)
+}
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   const { username, password } = req.body || {}
-  const uname = String(username || '').toLowerCase()
+  // Type and length validated BEFORE any hashing: oversized input never reaches scrypt.
+  if (typeof username !== 'string' || typeof password !== 'string' ||
+      !username.length || username.length > LOGIN_USERNAME_MAX ||
+      !password.length || password.length > LOGIN_PASSWORD_MAX)
+    return res.status(400).json({ error: 'Username and password must be text within length limits' })
+  const uname = username.toLowerCase()
   const key = `${req.ip || req.socket.remoteAddress || 'unknown'}|${uname}`
   const now = Date.now()
   const recent = (loginFailures.get(key) || []).filter(ts => now - ts < LOGIN_WINDOW_MS)
@@ -122,19 +159,18 @@ app.post('/api/login', (req, res) => {
     return res.status(429).json({ error: `Too many failed login attempts. Try again in ${Math.ceil(retryAfterSec / 60)} minute(s).`, retryAfterSec })
   }
   const u = db.prepare('SELECT * FROM users WHERE username=?').get(uname)
-  if (!u || !verifyPassword(password, u.passhash)) {
-    recent.push(now)
-    loginFailures.set(key, recent)
+  if (!u || !(await verifyPasswordAsync(password, u.passhash))) {
+    recordFailure(key, now)
     return res.status(401).json({ error: 'Invalid username or password' })
   }
   loginFailures.delete(key)
   const token = crypto.randomBytes(24).toString('hex')
-  db.prepare('INSERT INTO tokens VALUES (?,?,?)').run(token, u.username, now)
+  db.prepare('INSERT INTO tokens VALUES (?,?,?)').run(hashToken(token), u.username, now)
   res.json({ token, user: { username: u.username, name: u.name, role: u.role } })
 })
 app.post('/api/logout', (req, res) => {
   const h = req.headers.authorization || ''
-  if (h.startsWith('Bearer ')) db.prepare('DELETE FROM tokens WHERE token=?').run(h.slice(7))
+  if (h.startsWith('Bearer ')) db.prepare('DELETE FROM tokens WHERE token=?').run(hashToken(h.slice(7)))
   res.json({ ok: true })
 })
 app.get('/api/me', (req, res) => { const u = authUser(req); if (!u) return res.status(401).json({ error: 'not logged in' }); res.json({ user: u }) })
@@ -153,4 +189,4 @@ app.use((err, req, res, next) => {
 app.use((req, res) => res.status(404).json({ error:'Not found - this server is API-only' }))
 const PORT = process.env.PORT || 3001
 if (require.main === module) app.listen(PORT, process.env.HOST || '127.0.0.1', () => { sweep(); retention(); console.log(`CivicSync backend on http://127.0.0.1:${PORT}`) })
-module.exports = { app, db, sweep, retention, stop: () => { clearInterval(sweepTimer); db.close() } }
+module.exports = { app, db, sweep, retention, _loginFailures: loginFailures, stop: () => { clearInterval(sweepTimer); db.close() } }
