@@ -1,3 +1,4 @@
+process.env.AI_DETECTOR='off' // tests are deterministic whether or not weights are installed
 const { test, after }=require('node:test')
 const assert=require('node:assert/strict')
 process.env.DEMO_MODE='true'
