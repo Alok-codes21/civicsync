@@ -1,10 +1,10 @@
 # Original 29 unsolved/partial items - verified local backend scope
 
-54 automated tests pass, including real HTTP workflows, migration/restart, image similarity, offline retry, privacy and metric calculations. Separate optional-model HTTP smoke test also passes (synthetic fixture only, not accuracy evaluation). This does not validate a live deployment, frontend or physical municipal work. D = implemented prototype workflow; P = partial protection with stated gap; N = not implemented. Original #25 tracking is retained, not counted below.
+56 automated tests pass, including real HTTP workflows, migration/restart, image similarity, offline retry, privacy and metric calculations. Separate optional-model HTTP smoke test also passes (synthetic fixture only, not accuracy evaluation). This does not validate a live deployment, frontend or physical municipal work. D = implemented prototype workflow; P = partial protection with stated gap; N = not implemented. Original #25 tracking is retained, not counted below.
 
 | Original item | State | Implemented / remaining |
 |---|---|---|
-| 1 AI-generated images | P | Optional checksum-pinned Apache-2.0 ViT ONNX runs on local CPU, review-only uncalibrated score. Tested inference; no civic-photo accuracy validation. Missing model fails closed. |
+| 1 AI-generated images | P | Checksum-pinned Apache-2.0 ViT ONNX on local CPU, review-only uncalibrated score. One command: `npm run setup:detector` (downloads + SHA-256 check); ON automatically when weights exist, `not_connected` otherwise, `AI_DETECTOR=off` disables. Flag for human review only, never auto-reject. No civic-photo accuracy validation. |
 | 2 Fake/wrong GPS | P | Coordinate validation, accuracy/mismatch flags. Client GPS can still be spoofed. |
 | 3 Old/reused photos | P | Server receive time, exact SHA reuse and reported capture-age flags. Decoded-image dHash flags some resized/recompressed copies. Flat-image guard, capped search window. No trusted timestamp or reliable arbitrary edit/crop matching. |
 | 4 Duplicate complaints | D | Nearby same category/ward candidates and reviewer-confirmed common issue IDs; preserves reports. |
