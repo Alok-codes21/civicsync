@@ -1,10 +1,10 @@
 # Original 29 unsolved/partial items - verified local backend scope
 
-56 automated tests pass, including real HTTP workflows, migration/restart, image similarity, offline retry, privacy and metric calculations. Separate optional-model HTTP smoke test also passes (synthetic fixture only, not accuracy evaluation). This does not validate a live deployment, frontend or physical municipal work. D = implemented prototype workflow; P = partial protection with stated gap; N = not implemented. Original #25 tracking is retained, not counted below.
+66 automated tests pass, including real HTTP workflows, migration/restart, image similarity, offline retry, privacy and metric calculations. Separate optional-model HTTP smoke test also passes (synthetic fixture only, not accuracy evaluation). This does not validate a live deployment, frontend or physical municipal work. D = implemented prototype workflow; P = partial protection with stated gap; N = not implemented. Original #25 tracking is retained, not counted below.
 
 | Original item | State | Implemented / remaining |
 |---|---|---|
-| 1 AI-generated images | P | Checksum-pinned Apache-2.0 ViT ONNX on local CPU, review-only uncalibrated score. One command: `npm run setup:detector` (downloads + SHA-256 check); ON automatically when weights exist, `not_connected` otherwise, `AI_DETECTOR=off` disables. Flag for human review only, never auto-reject. No civic-photo accuracy validation. |
+| 1 AI-generated images | P | Checksum-pinned Apache-2.0 ViT ONNX on local CPU, review-only uncalibrated score. One command: `npm run setup:detector` (downloads + SHA-256 check); ON automatically when weights exist, `not_connected` otherwise, `AI_DETECTOR=off` disables. Flag for human review only, never auto-reject. Labelled-data evaluation command added with consent/provenance, both-class, duplicate and unavailable-model guards. No civic-photo accuracy validation. |
 | 2 Fake/wrong GPS | P | Coordinate validation, accuracy/mismatch flags. Client GPS can still be spoofed. |
 | 3 Old/reused photos | P | Server receive time, exact SHA reuse and reported capture-age flags. Decoded-image dHash flags some resized/recompressed copies. Flat-image guard, capped search window. No trusted timestamp or reliable arbitrary edit/crop matching. |
 | 4 Duplicate complaints | D | Nearby same category/ward candidates and reviewer-confirmed common issue IDs; preserves reports. |
@@ -15,7 +15,7 @@
 | 9 Recurring issues | D | Reopen cycles, related historical candidates and recurrence counts. |
 | 10 Citizen disputes | D | Owner-only reopen, resolved-state guard, reason, new deadline and escalation cycle. |
 | 11 Proof of actual work | P | Required before/after bytes, server record, submitter and audit. Capture/work claims not attested. |
-| 12 Wrong jurisdiction | P | Ward+category config and unknown-jurisdiction review. 94/100 Ghaziabad ward polygons from 2021-22 SBM, unverified hint only; no official current boundaries or officer registry. |
+| 12 Wrong jurisdiction | P | Ward+category config and unknown-jurisdiction review. 94/100 Ghaziabad ward polygons from 2021-22 SBM, unverified hint only; no official current boundaries or verified officer registry. Official-list-derived AE hints cover 100 wards; JE hints 56. Source A/ए numbering alignment and freshness unverified, 31 wards have multiple zone entries; no automatic routing. |
 | 13 Handoff delays | D | Pending transfer and target acceptance; old owner retained meanwhile. Does not guarantee response. |
 | 14 Deadline misses | P | L3 bug fixed, independent overdue calculation. Cannot guarantee repairs happen. |
 | 15 Escalation failures | P | Idempotent internal L1-L3 tasks and receipt. Real authority delivery/hierarchy pending. |
@@ -34,4 +34,4 @@
 | 29 Fair comparison | P | Sample sizes, mix, original SLA and no unsupported ranking. Category+severity standardized SLA rate only with >=10 matured cases in every reference stratum; otherwise null. No ranking; validated benchmark/confounder adjustment pending. |
 | 30 Public impact | P | Resolution/reopen/unique issue metrics and reported loss observations. Strict litres/hours/INR units. No baseline/control/causal reduction proven. |
 
-Count: 11 implemented prototype workflows, 18 partial, 0 wholly absent locally. This includes an explicitly untrained #22 heuristic, not completed predictive maintenance. This is not 29 fully solved real-world problems. Mobile OTP is locally implemented and tested: hashed codes, expiry, attempts/rate limits, masked private number, provider-pluggable sender and real verified flag. Default disabled; dev mode never sets real verification. No real SMS delivery validated or provider connected. Phone-only signup/login is pending. Aadhaar excluded by user request.
+Count: 11 implemented prototype workflows, 18 partial, 0 wholly absent locally. This includes an explicitly untrained #22 heuristic, not completed predictive maintenance. This is not 29 fully solved real-world problems. Mobile OTP is locally implemented and tested: hashed codes, expiry, attempts/rate limits, masked private number, provider-pluggable sender and real verified flag. Default disabled; dev mode never sets real verification. Opt-in Twilio Messaging adapter added and mock-tested, not Twilio Verify or a promised trial path. No real SMS delivery validated or provider connected. Phone-only signup/login is pending. Aadhaar excluded by user request.
