@@ -1,11 +1,16 @@
 /* Prototype workflows. Configured routes and reviewers are local demo identities,
    not a municipal integration. No AI or identity-verification claims are fabricated. */
 const crypto = require('crypto')
+const analytics = require('./analytics.cjs')
+const images = require('./images.cjs')
+const detector = require('./detector.cjs')
 const { DEPARTMENTS } = require('./seed.cjs')
+const jurisdiction = require('./jurisdiction.cjs')
+const DEMO_WARDS = ['Ward 12 - Gomti Nagar','Ward 8 - Aliganj','Ward 3 - Hazratganj']
 module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
   db.pragma('foreign_keys = ON')
   const columns = {
-    originalDeadlineTs:'INTEGER', lat:'REAL', lon:'REAL', accuracy:'REAL', issueId:'TEXT',
+    intakeActor:'TEXT', originalDeadlineTs:'INTEGER', lat:'REAL', lon:'REAL', accuracy:'REAL', issueId:'TEXT',
     reasons:"TEXT DEFAULT '[]'", severityReasons:"TEXT DEFAULT '[]'", resolvedTs:'INTEGER',
     reopenCount:'INTEGER DEFAULT 0', repairActor:'TEXT', accepted:'INTEGER DEFAULT 0',
     channel:"TEXT DEFAULT 'web'", language:"TEXT DEFAULT 'en'", routeVerified:'INTEGER DEFAULT 0'
@@ -26,17 +31,26 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
     CREATE TABLE IF NOT EXISTS escalation_tasks (complaintId TEXT NOT NULL, cycle INTEGER NOT NULL, level INTEGER NOT NULL, authority TEXT NOT NULL, state TEXT DEFAULT 'pending', acceptedBy TEXT, ts INTEGER NOT NULL, PRIMARY KEY(complaintId,cycle,level));
     CREATE TABLE IF NOT EXISTS impact (id INTEGER PRIMARY KEY, complaintId TEXT NOT NULL, actor TEXT NOT NULL, metric TEXT NOT NULL, value REAL NOT NULL, unit TEXT NOT NULL, note TEXT NOT NULL, ts INTEGER NOT NULL);
   `)
+  for(const [name,type] of Object.entries({dhash:'TEXT',lowInformation:'INTEGER DEFAULT 0'})) if(!db.prepare('PRAGMA table_info(evidence)').all().some(c=>c.name===name)) db.exec(`ALTER TABLE evidence ADD COLUMN ${name} ${type}`)
+  db.exec(`CREATE TABLE IF NOT EXISTS intake_keys(actor TEXT,key TEXT,digest TEXT,complaintId TEXT,PRIMARY KEY(actor,key));`)
   db.exec('UPDATE complaints SET originalDeadlineTs=deadlineTs WHERE originalDeadlineTs IS NULL; UPDATE complaints SET issueId=id WHERE issueId IS NULL;')
   // Mark legacy records as unverified. Preserve their text only in the restricted legacy timeline.
   db.exec("UPDATE complaints SET latestUpdate='Legacy demo record: historical evidence and verification claims are unverified.' WHERE author='' AND latestUpdate LIKE '%verif%'")
-  if (process.env.DEMO_MODE !== 'false') {
+  if (process.env.DEMO_MODE === 'true') {
     const users = [['alok','Citizen','citizen'],['citizen2','Second citizen','citizen'],['verma','Demo officer','official'],['reviewer','Independent demo reviewer','reviewer'],['supervisor','Demo supervisor','supervisor'],['assisted','Assisted reporting desk','intake']]
     for (const [u,n,r] of users) if (!db.prepare('SELECT 1 FROM users WHERE username=?').get(u)) db.prepare('INSERT INTO users(username,passhash,name,role) VALUES (?,?,?,?)').run(u,hashPassword('demo123'),n,r)
-    for (const ward of ['Ward 12 - Gomti Nagar','Ward 8 - Aliganj','Ward 3 - Hazratganj']) for (const [category,dept] of Object.entries(DEPARTMENTS)) db.prepare('INSERT OR IGNORE INTO routes VALUES (?,?,?,?,?,0)').run(ward,category,dept,'verma','supervisor')
+    if (process.env.DEMO_ROUTES === 'true') for (const ward of DEMO_WARDS) for (const [category,dept] of Object.entries(DEPARTMENTS)) db.prepare('INSERT OR IGNORE INTO routes VALUES (?,?,?,?,?,0)').run(ward,category,dept,'verma','supervisor')
+  }
+  function configuredRoute(ward, category) {
+    // Ignore the old seeded Lucknow routes unless explicitly running their demo.
+    // Preserve stored routes and complaints; never silently rewrite historical records.
+    if (DEMO_WARDS.includes(ward) && process.env.DEMO_ROUTES !== 'true') return null
+    return db.prepare('SELECT * FROM routes WHERE ward=? AND category=?').get(ward,category)
   }
   function audit(id, actor, action, before, after) {
     const prev = db.prepare('SELECT hash FROM audit ORDER BY seq DESC LIMIT 1').get()?.hash || ''
-    const ts=Date.now(), a=JSON.stringify(before ?? null), b=JSON.stringify(after ?? null)
+    const redact=value=>{if(!value||typeof value!=='object')return value;return Object.fromEntries(Object.entries(value).filter(([k])=>!['title','description','landmark','lat','lon','accuracy','author','note','reason','latestUpdate','citizenUsername'].includes(k)))}
+    const ts=Date.now(), a=JSON.stringify(redact(before) ?? null), b=JSON.stringify(redact(after) ?? null)
     const hash=crypto.createHash('sha256').update(JSON.stringify([id,actor,action,ts,a,b,prev])).digest('hex')
     db.prepare('INSERT INTO audit(complaintId,actor,action,ts,beforeJson,afterJson,prevHash,hash) VALUES (?,?,?,?,?,?,?,?)').run(id,actor,action,ts,a,b,prev,hash)
     const pos=db.prepare('SELECT COUNT(*) n FROM events WHERE complaintId=?').get(id).n
@@ -59,13 +73,13 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
     const h=Math.sin(dlat/2)**2+Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dlon/2)**2
     return 6371000*2*Math.asin(Math.min(1,Math.sqrt(h)))
   }
-  function member(u,c) { return u && (u.username===c.author || ['reviewer','supervisor'].includes(u.role) || (u.role==='official' && u.username===c.officer)) }
+  function member(u,c) { return u && (u.username===c.author || (u.role==='intake'&&u.username===c.intakeActor) || ['reviewer','supervisor'].includes(u.role) || (u.role==='official' && u.username===c.officer)) }
   function worker(u,c) { if(!u || !(u.role==='supervisor'||u.role==='official'&&u.username===c.officer)) fail(403,'Assigned officer or supervisor required') }
   function supervisor(u) { if(u?.role!=='supervisor') fail(403,'Supervisor required') }
   function serialize(c,u) {
     const overdue=c.status!=='Resolved'&&Date.now()>c.deadlineTs
     const base={id:c.id,status:c.status,category:c.category,priority:c.priority,submittedAt:c.submittedAt,deadline:c.deadline,dept:c.dept,escalationLevel:c.escalationLevel,overdue,stage:c.status,legacyDemo:!c.author}
-    if(!member(u,c)) return {...base,latestUpdate:`${c.status}. Public tracking omits private complaint details.`,timeline:db.prepare('SELECT action AS label,ts FROM audit WHERE complaintId=? ORDER BY seq').all(c.id).map(x=>({...x,at:fmtTs(x.ts)}))}
+    if(!member(u,c)) return {...base,latestUpdate:`${c.status}. Public tracking omits private complaint details.`,timeline:[]}
     const {submittedTs,deadlineTs,...rest}=c
     return {...rest,...base,reasons:JSON.parse(c.reasons),severityReasons:JSON.parse(c.severityReasons),timeline:db.prepare('SELECT actor,action AS label,ts,beforeJson,afterJson FROM audit WHERE complaintId=? ORDER BY seq').all(c.id),evidence:db.prepare('SELECT id,stage,actor,mime,sha,ts,capturedTs,reasons FROM evidence WHERE complaintId=?').all(c.id).map(e=>({...e,reasons:JSON.parse(e.reasons)}))}
   }
@@ -88,7 +102,7 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
       const changes=[]
       for(const c of db.prepare("SELECT * FROM complaints WHERE status!='Resolved' AND deadlineTs < ?").all(now)) {
         const days=Math.floor((now-c.deadlineTs)/86400000), level=days>=7?3:days>=2?2:1
-        const route=db.prepare('SELECT * FROM routes WHERE ward=? AND category=?').get(c.ward,c.category)
+        const route=configuredRoute(c.ward,c.category)
         for(let n=1;n<=level;n++) {
           const names=['Ward Officer','Zonal Officer','Municipal Commissioner']
           const inserted=db.prepare('INSERT OR IGNORE INTO escalation_tasks(complaintId,cycle,level,authority,ts) VALUES (?,?,?,?,?)').run(c.id,c.reopenCount,n,route?.supervisor || names[n-1],now)
@@ -104,29 +118,45 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
       return changes
     })()
   }
+  function retention(now=Date.now()) {
+    return db.transaction(()=>{const old=db.prepare("SELECT id FROM complaints WHERE status='Resolved' AND resolvedTs<? AND (lat IS NOT NULL OR description!='[retention redacted]')").all(now-90*86400000);let removed=0;for(const c of old){removed+=db.prepare('DELETE FROM evidence WHERE complaintId=?').run(c.id).changes;db.prepare("UPDATE complaints SET lat=NULL,lon=NULL,accuracy=NULL,landmark='',description='[retention redacted]',title='[retention redacted]' WHERE id=?").run(c.id)}if(old.length)audit('PRIVACY','system','Retention sweep',null,{complaints:old.length,evidenceRemoved:removed});return {complaintsRedacted:old.length,evidenceRemoved:removed,backups:'not_managed',historicalAudit:'append_only_legacy_PII_not_removed'}})()
+  }
   function mount(app,authUser) {
     const route=(method,path,fn)=>app[method](path,(req,res,next)=>{try {const u=authUser(req); const body=req.body||{}; const result=db.transaction(()=>fn(req,u,body,res))(); if(!res.headersSent) res.json(result)} catch(e){if(e.status)res.status(e.status).json({error:e.message});else next(e)}})
     const complaint=req=>{const c=get(req.params.id);if(!c)fail(404,'Complaint not found');return c}
-    route('get','/api/capabilities',()=>({version:2,demoMode:process.env.DEMO_MODE!=='false',identity:{smsOTP:'not_connected',aadhaar:'not_connected'},imageDetection:'not_connected',gps:'client_asserted_not_attested',jurisdictions:'demo_routes_not_official_boundaries',languages:['en','hi'],assistedIntake:true,notifications:'internal_queue_only'}))
+    route('get','/api/capabilities',()=>({version:2,demoMode:process.env.DEMO_MODE==='true',identity:{smsOTP:process.env.PHONE_OTP_MODE==='sms'?'provider_configured_delivery_unverified':process.env.PHONE_OTP_MODE==='dev'?'dev_only_not_real_verification':'not_connected',aadhaar:'out_of_scope'},imageDetection:detector.status(),imageSimilarity:'local_dhash_review_only',predictiveRisk:'history_heuristic_not_trained',offlineSync:'idempotent_authenticated_intake',retention:'resolved_evidence_90_days_and_location_redaction',otpPrototype:'not_connected_no_free_SMS_rail',gps:'client_asserted_not_attested',jurisdictions:jurisdiction.status().status,municipality:'Ghaziabad',demoRoutes:process.env.DEMO_ROUTES==='true',languages:['en','hi'],assistedIntake:true,notifications:'internal_queue_only'}))
+    route('get','/api/translations',(req)=>({languages:['en','hi'],strings:require('./i18n.cjs').strings,regionalLanguages:'not_translated',coverage:'common errors and acknowledgement only; English fallback disclosed'}))
+    route('get','/api/jurisdictions',()=>jurisdiction.status())
+    route('get','/api/jurisdictions/lookup',(req)=>{
+      const location=coordinates({lat:req.query.lat==null?null:Number(req.query.lat),lon:req.query.lon==null?null:Number(req.query.lon)},true)
+      return jurisdiction.lookup(location)
+    })
     route('get','/api/complaints',(req,u)=>{sweep();let rows=db.prepare('SELECT * FROM complaints ORDER BY submittedTs DESC').all();if(req.query.mine==='true'){if(!u)fail(401,'Login required');rows=rows.filter(c=>c.author===u.username)}if(req.query.status&&req.query.status!=='all') rows=rows.filter(c=>c.status===req.query.status);if(req.query.q){const q=String(req.query.q).toLowerCase();rows=rows.filter(c=>(c.id+' '+c.category).toLowerCase().includes(q))} const offset=Math.max(0,Number(req.query.offset)||0),limit=Math.max(1,Math.min(100,Number(req.query.limit)||25));return {total:rows.length,complaints:rows.slice(offset,offset+limit).map(c=>serialize(c,u))}})
     route('get','/api/complaints/:id',(req,u)=>{sweep();return {complaint:serialize(complaint(req),u)}})
     route('post','/api/complaints',(req,u,b,res)=>{
       if(!u)fail(401,'Login required; use assisted desk for offline intake')
       for(const key of ['title','description','ward'])if(!text(b[key]))fail(400,key+' required')
       if(!Object.hasOwn(DEPARTMENTS,b.category))fail(400,'Invalid category')
+      const key=text(req.headers['idempotency-key'],120)
+      const digest=crypto.createHash('sha256').update(JSON.stringify(b)).digest('hex')
+      if(key){const prior=db.prepare('SELECT * FROM intake_keys WHERE actor=? AND key=?').get(u.username,key);if(prior){if(prior.digest!==digest)fail(409,'Idempotency key payload conflict');return {complaint:serialize(get(prior.complaintId),u),acknowledgementNumber:prior.complaintId,replayed:true}}}
       const location=coordinates(b),now=Date.now(),sev=severity(b)
-      const r=db.prepare('SELECT * FROM routes WHERE ward=? AND category=?').get(text(b.ward),b.category)
+      const r=configuredRoute(text(b.ward),b.category)
       const channel=u.role==='intake'?(b.channel||'assisted'):'web'
-      if(!['web','assisted','phone','desk'].includes(channel))fail(400,'Invalid intake channel')
-      const author=u.role==='intake'?text(b.citizenUsername):u.username
+      if(!['web','assisted','phone','desk','offline'].includes(channel))fail(400,'Invalid intake channel')
+      let author=u.role==='intake'?text(b.citizenUsername):u.username
+      if(u.role==='intake'&&!author){author='unclaimed-'+crypto.randomUUID();db.prepare('INSERT INTO users(username,passhash,name,role) VALUES (?,?,?,?)').run(author,hashPassword(crypto.randomBytes(48).toString('hex')),'Unclaimed assisted report','citizen')}
       if(!author||!db.prepare("SELECT 1 FROM users WHERE username=? AND role='citizen'").get(author))fail(400,'Known citizen account required; anonymous/offline unclaimed registration is pending')
       if(b.language&&!['en','hi'].includes(b.language))fail(400,'Supported language codes: en, hi')
-      const reasons=['CONTENT_UNVERIFIED',...(location.lat==null?['LOCATION_MISSING']:['GPS_CLIENT_ASSERTED']),...(!r?.verified?['JURISDICTION_UNVERIFIED']:[])]
+      let geoWard=null
+      if(location.lat!=null){try{const g=jurisdiction.lookup(location);geoWard=g.matched?g.ward:null}catch(e){/* invalid coords already validated by coordinates() shape; fail closed */}}
+      const reasons=[...(geoWard?['GEO_WARD_MATCHED_UNVERIFIED_2022_SBM']:[location.lat==null?'GEO_WARD_NOT_CHECKED':'GEO_WARD_NOT_FOUND']),'CONTENT_UNVERIFIED',...(location.lat==null?['LOCATION_MISSING']:['GPS_CLIENT_ASSERTED']),'JURISDICTION_UNVERIFIED']
       const id='SHG-'+new Date().getFullYear()+'-'+crypto.randomBytes(6).toString('hex').toUpperCase(),deadlineTs=now+PRIORITY_DAYS[sev.priority]*86400000
-      const c={id,title:text(b.title,140),category:b.category,description:text(b.description),ward:text(b.ward,140),landmark:text(b.landmark,200),status:r?'Assigned':'Routing Review',priority:sev.priority,submittedAt:fmtTs(now),submittedTs:now,deadline:fmtDate(deadlineTs),deadlineTs,originalDeadlineTs:deadlineTs,dept:r?.dept||'Jurisdiction review',officer:r?.officer||null,author,latestUpdate:r?'Demo route assigned; evidence not verified.':'Unknown jurisdiction: manual routing required.',...location,issueId:id,reasons:JSON.stringify(reasons),severityReasons:JSON.stringify(sev.reasons),channel,language:b.language||'en',routeVerified:r?.verified||0}
+      const c={id,title:text(b.title,140),category:b.category,description:text(b.description),ward:text(b.ward,140),landmark:text(b.landmark,200),status:r?'Assigned':'Routing Review',priority:sev.priority,submittedAt:fmtTs(now),submittedTs:now,deadline:fmtDate(deadlineTs),deadlineTs,originalDeadlineTs:deadlineTs,dept:r?.dept||'Jurisdiction review',officer:r?.officer||null,author,latestUpdate:r?'Configured prototype route assigned; jurisdiction and evidence not verified.':(geoWard?`Likely ward ${geoWard.code} (${geoWard.name}) per 2022 SBM boundaries, unverified; manual routing required.`:'Ward not matched in loaded partial 2022 boundaries: manual routing required.'),...location,issueId:id,reasons:JSON.stringify(reasons),severityReasons:JSON.stringify(sev.reasons),channel,language:b.language||'en',routeVerified:0,intakeActor:u.role==='intake'?u.username:null}
       db.prepare(`INSERT INTO complaints(${Object.keys(c).join(',')}) VALUES (${Object.keys(c).map(k=>'@'+k).join(',')})`).run(c)
+      if(key)db.prepare('INSERT INTO intake_keys VALUES (?,?,?,?)').run(u.username,key,digest,id)
       audit(id,u.username,'Complaint submitted',null,{severity:sev,channel,locationTrust:'unverified'})
-      res.status(201);return {complaint:serialize(get(id),u),acknowledgementNumber:id,duplicateCandidates:candidates(c).map(x=>({id:x.id,status:x.status,issueId:x.issueId})),requiresHumanReview:true}
+      res.status(201);return {complaint:serialize(get(id),u),jurisdiction:{geoWard,boundarySource:'sbm_2022_partial_unverified',officerRouting:'manual_only'},acknowledgementNumber:id,duplicateCandidates:candidates(c).map(x=>({id:x.id,status:x.status,issueId:x.issueId})),requiresHumanReview:true}
     })
     route('post','/api/complaints/:id/status',(req,u,b)=>{
       const c=complaint(req),note=reason(b.note)
@@ -151,11 +181,14 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
       db.prepare('INSERT OR REPLACE INTO routes VALUES (?,?,?,?,?,?)').run(text(b.ward),b.category,text(b.dept),b.officer,b.supervisor,0)
       audit('CONFIG',u.username,'Routing configuration updated',null,{...b,reason:note,verified:false});return {ok:true,verified:false,notice:'Configuration is not proof of municipal jurisdiction'}
     })
-    route('post','/api/complaints/:id/route',(req,u,b)=>{supervisor(u);const c=complaint(req),note=reason(b.reason),r=db.prepare('SELECT * FROM routes WHERE ward=? AND category=?').get(c.ward,c.category);if(!r)fail(409,'Configure this ward and category first');return {complaint:serialize(change(c,u,'Jurisdiction routing reviewed',{dept:r.dept,officer:r.officer,status:'Assigned',accepted:0,routeVerified:0,latestUpdate:note}),u),jurisdiction:'configured_not_geographically_verified'}})
+    route('post','/api/complaints/:id/route',(req,u,b)=>{supervisor(u);const c=complaint(req),note=reason(b.reason),r=configuredRoute(c.ward,c.category);if(!r)fail(409,'Configure this ward and category first');return {complaint:serialize(change(c,u,'Jurisdiction routing reviewed',{dept:r.dept,officer:r.officer,status:'Assigned',accepted:0,routeVerified:0,latestUpdate:note}),u),jurisdiction:'configured_not_geographically_verified'}})
     route('post','/api/complaints/:id/transfer',(req,u,b)=>{const c=complaint(req);worker(u,c);if(!db.prepare("SELECT 1 FROM users WHERE username=? AND role='official'").get(b.target)||b.target===c.officer)fail(400,'Different known officer required');if(db.prepare("SELECT 1 FROM transfers WHERE complaintId=? AND state='pending'").get(c.id))fail(409,'Transfer already pending');const note=reason(b.reason);const t=db.prepare('INSERT INTO transfers(complaintId,requester,target,reason) VALUES (?,?,?,?)').run(c.id,u.username,b.target,note);audit(c.id,u.username,'Transfer requested',null,{id:Number(t.lastInsertRowid),target:b.target,reason:note});return {transferId:Number(t.lastInsertRowid),ownerRemains:c.officer}})
     route('post','/api/transfers/:id/accept',(req,u)=>{const t=db.prepare('SELECT * FROM transfers WHERE id=?').get(req.params.id);if(!t)fail(404,'Transfer not found');if(u?.username!==t.target)fail(403,'Target officer required');if(t.state!=='pending')fail(409,'Transfer not pending');const c=get(t.complaintId);db.prepare("UPDATE transfers SET state='accepted' WHERE id=?").run(t.id);return {complaint:serialize(change(c,u,'Transfer accepted',{officer:u.username,accepted:1}),u)}})
     route('post','/api/complaints/:id/extensions',(req,u,b)=>{const c=complaint(req);worker(u,c);const note=reason(b.reason);if(!Number.isSafeInteger(b.deadlineTs)||b.deadlineTs<=Math.max(c.deadlineTs,Date.now())||b.deadlineTs> Date.now()+30*86400000)fail(400,'Future deadline within 30 days required');if(db.prepare("SELECT 1 FROM extensions WHERE complaintId=? AND state='pending'").get(c.id))fail(409,'Extension pending');const x=db.prepare('INSERT INTO extensions(complaintId,requester,deadlineTs,reason) VALUES (?,?,?,?)').run(c.id,u.username,b.deadlineTs,note);audit(c.id,u.username,'Extension requested',null,{id:Number(x.lastInsertRowid),reason:note,deadlineTs:b.deadlineTs});return {extensionId:Number(x.lastInsertRowid),state:'pending'}})
     route('post','/api/extensions/:id/review',(req,u,b)=>{supervisor(u);const x=db.prepare('SELECT * FROM extensions WHERE id=?').get(req.params.id);if(!x)fail(404,'Extension not found');if(x.requester===u.username)fail(403,'Independent approval required');if(x.state!=='pending')fail(409,'Already reviewed');if(x.deadlineTs<=Date.now()&&b.decision==='approve')fail(409,'Requested extension is no longer in the future');if(!['approve','deny'].includes(b.decision))fail(400,'approve or deny required');const note=reason(b.reason);db.prepare('UPDATE extensions SET state=? WHERE id=?').run(b.decision,x.id);const c=get(x.complaintId);if(b.decision==='approve')change(c,u,'Extension approved',{deadlineTs:x.deadlineTs,deadline:fmtDate(x.deadlineTs),latestUpdate:note,status:['Overdue','Escalated'].includes(c.status)?'In Progress':c.status});else audit(c.id,u.username,'Extension denied',x,{reason:note});return {state:b.decision,complaint:serialize(get(c.id),u)}})
+    app.post('/api/complaints/:id/evidence',async(req,res,next)=>{
+      try {const u=authUser(req),c=get(req.params.id);if(!c||!member(u,c))return res.status(403).json({error:'Private evidence access required'});const b=req.body||{};if(typeof b.base64!=='string'||b.base64.length>5600000)return res.status(400).json({error:'PNG/JPEG base64 required'});req.imageInfo=await images.inspect(Buffer.from(b.base64,'base64'));req.aiSignal=await detector.predict(Buffer.from(b.base64,'base64'));next()}catch(e){res.status(400).json({error:'Image decode failed or pixel limit exceeded'})}
+    })
     route('post','/api/complaints/:id/evidence',(req,u,b,res)=>{
       const c=complaint(req);if(!member(u,c))fail(403,'Private evidence access required')
       if(!['before','after','dispute'].includes(b.stage))fail(400,'before, after or dispute required')
@@ -166,16 +199,19 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
       if(!(b.mime==='image/png'&&isPNG || b.mime==='image/jpeg'&&isJPEG))fail(400,'File signature mismatch')
       if(db.prepare('SELECT COUNT(*) n FROM evidence WHERE complaintId=?').get(c.id).n>=20)fail(429,'Maximum 20 evidence files per complaint')
       const loc=coordinates(b),now=Date.now(),sha=crypto.createHash('sha256').update(bytes).digest('hex')
-      const reasons=['AI_DETECTOR_UNAVAILABLE','EDIT_DETECTION_UNAVAILABLE','CAPTURE_METADATA_CLIENT_ASSERTED']
+      const info=req.imageInfo
+      const reasons=[req.aiSignal.reason,'EDIT_DETECTION_UNAVAILABLE','CAPTURE_METADATA_CLIENT_ASSERTED']
       if(db.prepare('SELECT 1 FROM evidence WHERE sha=?').get(sha))reasons.push('EXACT_PHOTO_REUSED')
+      if(info.lowInformation)reasons.push('LOW_INFORMATION_IMAGE_SIMILARITY_UNRELIABLE')
+      else if(db.prepare('SELECT dhash FROM evidence WHERE dhash IS NOT NULL AND lowInformation=0 AND ts>? ORDER BY ts DESC LIMIT 2000').all(now-90*86400000).some(e=>images.hamming(e.dhash,info.dhash)<=6))reasons.push('SIMILAR_PHOTO_REVIEW_REQUIRED')
       if(loc.lat==null)reasons.push('PHOTO_LOCATION_MISSING');else if(metres(c,loc)>150)reasons.push('PHOTO_LOCATION_MISMATCH')
       if(loc.accuracy==null||loc.accuracy>100)reasons.push('LOCATION_ACCURACY_UNCERTAIN')
       if(b.capturedTs!=null&&(!Number.isSafeInteger(b.capturedTs)||b.capturedTs>now+300000))fail(400,'Invalid capture time')
       if(b.capturedTs==null)reasons.push('CAPTURE_TIME_MISSING');else if(now-b.capturedTs>7*86400000)reasons.push('OLD_PHOTO')
       const id=crypto.randomUUID()
-      db.prepare('INSERT INTO evidence VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)').run(id,c.id,u.username,b.stage,b.mime,bytes,sha,now,b.capturedTs??null,loc.lat,loc.lon,loc.accuracy,JSON.stringify(reasons))
+      db.prepare('INSERT INTO evidence(id,complaintId,actor,stage,mime,bytes,sha,ts,capturedTs,lat,lon,accuracy,reasons,dhash,lowInformation) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(id,c.id,u.username,b.stage,b.mime,bytes,sha,now,b.capturedTs??null,loc.lat,loc.lon,loc.accuracy,JSON.stringify(reasons),info.dhash,info.lowInformation?1:0)
       const all=[...new Set([...JSON.parse(c.reasons),...reasons])];change(c,u,'Evidence received',{reasons:JSON.stringify(all)})
-      res.status(201);return {evidenceId:id,reasons,decision:'human_review',confidence:null,serverReceivedTs:now,notice:'Signals do not prove AI generation, GPS authenticity or capture time'}
+      res.status(201);return {evidenceId:id,reasons,aiSignal:req.aiSignal,decision:'human_review',confidence:null,serverReceivedTs:now,notice:'Signals do not prove AI generation, GPS authenticity or capture time'}
     })
     app.get('/api/evidence/:id',(req,res)=>{const u=authUser(req),e=db.prepare('SELECT * FROM evidence WHERE id=?').get(req.params.id);if(!e)return res.status(404).json({error:'Evidence not found'});if(!member(u,get(e.complaintId)))return res.status(403).json({error:'Private evidence access required'});res.set('Content-Type',e.mime).set('Cache-Control','no-store').set('X-Content-Type-Options','nosniff').send(e.bytes)})
     route('post','/api/complaints/:id/repair',(req,u,b)=>{const c=complaint(req);worker(u,c);if(!c.accepted)fail(409,'Accept assignment first');if(['Resolved','Verification Pending'].includes(c.status))fail(409,'Repair cannot be submitted at this stage');const note=reason(b.note);const ev=db.prepare('SELECT stage,actor FROM evidence WHERE complaintId=?').all(c.id);if(!ev.some(x=>x.stage==='before')||!ev.some(x=>x.stage==='after'&&x.actor===u.username))fail(409,'Before evidence and your after evidence required');return {complaint:serialize(change(c,u,'Repair submitted',{status:'Verification Pending',repairActor:u.username,latestUpdate:note}),u),verification:'pending'}})
@@ -188,16 +224,16 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
     route('get','/api/escalations',(req,u)=>{supervisor(u);sweep();return {tasks:db.prepare('SELECT * FROM escalation_tasks ORDER BY ts DESC').all(),delivery:'internal_queue_only'}})
     route('post','/api/complaints/:id/escalations/:level/accept',(req,u,b)=>{supervisor(u);const c=complaint(req),level=Number(req.params.level),note=reason(b.reason);const task=db.prepare('SELECT * FROM escalation_tasks WHERE complaintId=? AND cycle=? AND level=?').get(c.id,c.reopenCount,level);if(!task)fail(404,'Escalation not found');if(task.state!=='pending')fail(409,'Already accepted');db.prepare("UPDATE escalation_tasks SET state='accepted',acceptedBy=? WHERE complaintId=? AND cycle=? AND level=?").run(u.username,c.id,c.reopenCount,level);audit(c.id,u.username,'Escalation accepted',task,{reason:note});return {ok:true,ownerRemains:c.officer}})
     route('get','/api/audit',(req,u)=>{supervisor(u);const rows=db.prepare('SELECT * FROM audit ORDER BY seq').all();let prev='',valid=true;for(const r of rows){const hash=crypto.createHash('sha256').update(JSON.stringify([r.complaintId,r.actor,r.action,r.ts,r.beforeJson,r.afterJson,r.prevHash])).digest('hex');if(r.prevHash!==prev||r.hash!==hash)valid=false;prev=r.hash}return {valid,events:rows,limit:'Local hash chain, not externally anchored; database administrators can replace the file'}})
-    function metrics(rows) {
-      const resolved=rows.filter(x=>x.resolvedTs&&x.status==='Resolved'),times=resolved.map(x=>(x.resolvedTs-x.submittedTs)/3600000).sort((a,b)=>a-b)
-      return {total:rows.length,resolved:resolved.length,pending:rows.length-resolved.length,overdue:rows.filter(x=>x.status!=='Resolved'&&Date.now()>x.deadlineTs).length,escalated:rows.filter(x=>x.status!=='Resolved'&&x.escalationLevel>0).length,uniqueIssues:new Set(rows.map(x=>x.issueId)).size,reopenCount:rows.reduce((s,x)=>s+x.reopenCount,0),medianResolutionHours:times.length?times[Math.floor(times.length/2)]:null,withinOriginalSLA:resolved.filter(x=>x.resolvedTs<=x.originalDeadlineTs).length,bySeverity:Object.fromEntries(Object.keys(PRIORITY_DAYS).map(p=>[p,rows.filter(x=>x.priority===p).length]))}
-    }
+    const metrics=analytics.metrics
     route('get','/api/stats/public',()=>{sweep();return {...metrics(db.prepare("SELECT * FROM complaints WHERE author!=''").all()),excludesLegacyDemo:true,impactCausality:'not_established'}})
-    route('get','/api/stats/comparison',()=>{sweep();const rows=db.prepare("SELECT * FROM complaints WHERE author!=''").all(),depts=[...new Set(rows.map(x=>x.dept))];return {departments:depts.map(dept=>{const subset=rows.filter(x=>x.dept===dept);return {dept,...metrics(subset),sampleSize:subset.length,comparisonEligible:subset.length>=10,ranking:null}}),notice:'Descriptive counts, severity mix and original SLA; no speed-only ranking or causal impact claims'}})
+    route('get','/api/stats/comparison',()=>{sweep();return {departments:analytics.comparison(db.prepare("SELECT * FROM complaints WHERE author!=''").all()),notice:'Category and severity standardization only when all strata have >=10 matured complaints; no ranking, calibration or causal claim'}})
     route('get','/api/stats/workload',(req,u)=>{supervisor(u);sweep();const rows=db.prepare("SELECT * FROM complaints WHERE author!=''").all();return {officers:[...new Set(rows.map(x=>x.officer))].map(officer=>({officer,...metrics(rows.filter(x=>x.officer===officer))})),ranking:null}})
-    route('get','/api/stats/hotspots',(req,u)=>{supervisor(u);const rows=db.prepare("SELECT * FROM complaints WHERE author!=''").all(),groups=new Map();for(const c of rows){if(c.lat==null)continue;const key=c.category+':'+c.lat.toFixed(3)+':'+c.lon.toFixed(3);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(c)}return {hotspots:[...groups.entries()].map(([cell,x])=>({cell,reports:x.length,uniqueIssues:new Set(x.map(c=>c.issueId)).size,recurrences:x.reduce((s,c)=>s+c.reopenCount,0),maintenanceReview:x.length>=3,reason:'Repeated complaint counts; heuristic, not a trained prediction'})),predictionModel:'not_trained'}})
-    route('post','/api/complaints/:id/impact',(req,u,b)=>{const c=complaint(req);worker(u,c);if(!['water_loss_litres','road_closure_hours','repair_cost_inr'].includes(b.metric)||typeof b.value!=='number'||!Number.isFinite(b.value)||b.value<0||!text(b.unit))fail(400,'Valid metric, nonnegative value and unit required');const note=reason(b.note);db.prepare('INSERT INTO impact(complaintId,actor,metric,value,unit,note,ts) VALUES (?,?,?,?,?,?,?)').run(c.id,u.username,b.metric,b.value,text(b.unit),note,Date.now());audit(c.id,u.username,'Impact observation recorded',null,{metric:b.metric,value:b.value,unit:b.unit,source:'officer_reported'});return {recorded:true,verified:false}})
+    route('get','/api/stats/hotspots',(req,u)=>{supervisor(u);return {hotspots:analytics.clusters(db.prepare("SELECT * FROM complaints WHERE author!=''").all()),predictionModel:'not_trained',method:'150m connected components by category, 90-day window, 3 unique issues for review',limit:'Client coordinates and reporting bias; no asset failure probability'}})
+    route('get','/api/stats/predictive-risk',(req,u)=>{supervisor(u);return {clusters:analytics.clusters(db.prepare("SELECT * FROM complaints WHERE author!=''").all()),model:'history_heuristic_v1',trained:false,validated:false,notice:'Prioritize site inspection, not predicted failure or automatic repair'}})
+    route('get','/api/privacy',(req,u)=>({publicDetails:'restricted',evidenceRetentionDays:90,locationRetention:'redacted with evidence after resolution retention expires',historicalAudit:'Old entries may retain PII; backups need operator policy',productionReady:false}))
+    route('post','/api/privacy/retention',(req,u)=>{supervisor(u);return retention()})
+    route('post','/api/complaints/:id/impact',(req,u,b)=>{const c=complaint(req);worker(u,c);if(!['water_loss_litres','road_closure_hours','repair_cost_inr'].includes(b.metric)||typeof b.value!=='number'||!Number.isFinite(b.value)||b.value<0||b.unit!==({water_loss_litres:'litres',road_closure_hours:'hours',repair_cost_inr:'INR'})[b.metric])fail(400,'Valid metric, nonnegative value and unit required');const note=reason(b.note);db.prepare('INSERT INTO impact(complaintId,actor,metric,value,unit,note,ts) VALUES (?,?,?,?,?,?,?)').run(c.id,u.username,b.metric,b.value,text(b.unit),note,Date.now());audit(c.id,u.username,'Impact observation recorded',null,{metric:b.metric,value:b.value,unit:b.unit,source:'officer_reported'});return {recorded:true,verified:false}})
     route('get','/api/impact',(req,u)=>{supervisor(u);return {observations:db.prepare('SELECT * FROM impact ORDER BY ts DESC').all(),notice:'Reported observations only; baseline/control data and independent measurement needed to claim reduction'}})
   }
-  return {mount,sweep}
+  return {mount,sweep,retention}
 }
