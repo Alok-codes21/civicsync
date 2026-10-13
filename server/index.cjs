@@ -66,9 +66,11 @@ const PRIORITY_DAYS = { Critical: 2, High: 5, Medium: 7, Low: 10 }
 function fmtDate(ts) { return new Date(ts).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric', timeZone:'Asia/Calcutta' }) }
 function fmtTs(ts) { return new Date(ts).toISOString() }
 const workflows = require('./workflows.cjs')({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS })
-const { sweep } = workflows
+const { sweep, retention } = workflows
+require('./detector.cjs').load()
 const sweepTimer = setInterval(() => {
   sweep()
+  retention()
   db.prepare('DELETE FROM tokens WHERE createdTs < ?').run(Date.now() - 12 * 60 * 60 * 1000)
 }, 60000)
 sweepTimer.unref()
@@ -76,7 +78,15 @@ sweepTimer.unref()
 /* ---------- app ---------- */
 const app = express()
 app.use(express.json({ limit: '6mb' }))
-app.use((req, res, next) => { res.setHeader('Access-Control-Allow-Origin', '*'); res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS'); if (req.method === 'OPTIONS') return res.sendStatus(204); next() })
+app.use((req,res,next)=>{
+ res.set('Cache-Control','no-store').set('X-Content-Type-Options','nosniff').set('Referrer-Policy','no-referrer')
+ const origin=req.headers.origin,allowed=(process.env.CORS_ORIGINS||'').split(',').filter(Boolean)
+ if(origin&&allowed.includes(origin)){res.set('Access-Control-Allow-Origin',origin).set('Vary','Origin').set('Access-Control-Allow-Headers','Content-Type, Authorization, Idempotency-Key').set('Access-Control-Allow-Methods','GET,POST,OPTIONS')}
+ if(req.method==='OPTIONS')return res.sendStatus(origin&&!allowed.includes(origin)?403:204)
+ next()
+})
+app.use(require('./i18n.cjs').middleware)
+
 
 const TOKEN_TTL_MS = 12 * 60 * 60 * 1000 // sessions expire after 12 hours
 function authUser(req) {
@@ -129,6 +139,11 @@ app.post('/api/logout', (req, res) => {
 })
 app.get('/api/me', (req, res) => { const u = authUser(req); if (!u) return res.status(401).json({ error: 'not logged in' }); res.json({ user: u }) })
 
+// A sender adapter is loaded only by explicit operator configuration. No default real SMS.
+const otpMode=process.env.PHONE_OTP_MODE||'disabled'
+const otpSender=otpMode==='sms'&&process.env.PHONE_OTP_SENDER_MODULE?require(path.resolve(process.env.PHONE_OTP_SENDER_MODULE)):null
+const phoneOTP=require('./phone-otp.cjs')({db,authUser,mode:otpMode,sender:otpSender,pepper:process.env.PHONE_OTP_PEPPER})
+phoneOTP.mount(app)
 workflows.mount(app, authUser)
 app.use((err, req, res, next) => {
   if (err.status || err.type === 'entity.too.large') return res.status(err.status || 413).json({ error:'Invalid or oversized request' })
@@ -137,5 +152,5 @@ app.use((err, req, res, next) => {
 })
 app.use((req, res) => res.status(404).json({ error:'Not found - this server is API-only' }))
 const PORT = process.env.PORT || 3001
-if (require.main === module) app.listen(PORT, () => { sweep(); console.log(`CivicSync backend on http://127.0.0.1:${PORT}`) })
-module.exports = { app, db, sweep, stop: () => { clearInterval(sweepTimer); db.close() } }
+if (require.main === module) app.listen(PORT, process.env.HOST || '127.0.0.1', () => { sweep(); retention(); console.log(`CivicSync backend on http://127.0.0.1:${PORT}`) })
+module.exports = { app, db, sweep, retention, stop: () => { clearInterval(sweepTimer); db.close() } }
