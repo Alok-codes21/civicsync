@@ -2,3 +2,5 @@ node_modules
 server/civicsync.db*
 *.log
 .DS_Store
+
+models/
