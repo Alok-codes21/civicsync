@@ -130,7 +130,7 @@ Exact source findings are in `data/ghaziabad/provenance.json`.
 
 ### Optional local AI review signal
 
-`node scripts/download-model.cjs` explicitly downloads checksum-pinned Apache-2.0 model weights (about 83 MB). Weights are not included in the source ZIP or patch. Then set `AI_MODEL_PATH` to the downloaded file. Runtime inference uses local CPU only and never sends citizen images to an external API. Missing/bad model and concurrent work fail closed to human review.
+Setup, one command: `npm run setup:detector`. It downloads the checksum-pinned (SHA-256) Apache-2.0 model weights (about 83 MB) into `models/` (git-ignored, never committed) and verifies them. Restart the server: the detector turns ON automatically when `models/ai-image-detection.onnx` exists (or `AI_MODEL_PATH` points to a file). Without weights it stays `not_connected`; `AI_DETECTOR=off` forces it off. Check `GET /api/capabilities`. Runtime inference uses local CPU only and never sends citizen images to an external API. Missing/bad model and concurrent work fail closed to human review.
 
 Attribution and version are in `docs/model-provenance.json`; original model card is in `docs/AI_MODEL_CARD.md`. The model uses CIFAKE-trained ViT from Google/dima806/CapCheck, converted by ONNX Community. The score is a softmax model output, not a calibrated probability or proof of authenticity. No accuracy claim on CivicSync photos is available. Bilinear 224x224 RGB preprocessing follows the model configuration, but quantization/domain/compression effects remain unevaluated. Never auto-reject complaints using it.
 
