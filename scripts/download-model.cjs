@@ -1,0 +1,4 @@
+// Explicit setup only. The API never downloads model weights during a request.
+const fs=require('fs'),path=require('path'),crypto=require('crypto'),meta=require('../docs/model-provenance.json')
+async function main(){const target=path.resolve(process.argv[2]||'models/ai-image-detection.onnx');const url=`https://huggingface.co/${meta.model}/resolve/${meta.revision}/${meta.file}`;const r=await fetch(url);if(!r.ok)throw new Error('Download failed: '+r.status);const b=Buffer.from(await r.arrayBuffer());if(b.length!==meta.sizeBytes||crypto.createHash('sha256').update(b).digest('hex')!==meta.sha256)throw new Error('Checksum mismatch');fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,b,{flag:'wx'});console.log('Model saved:',target);console.log('Set AI_MODEL_PATH to this file. Unvalidated review signal only; see docs/model-provenance.json.')}
+main().catch(e=>{console.error(e.message);process.exitCode=1})
