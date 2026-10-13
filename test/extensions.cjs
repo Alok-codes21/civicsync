@@ -1,3 +1,4 @@
+process.env.AI_DETECTOR='off' // tests are deterministic whether or not weights are installed
 const {test,after}=require('node:test'),assert=require('node:assert/strict'),sharp=require('sharp'),{spawnSync}=require('node:child_process')
 process.env.DEMO_MODE='true';process.env.DB_PATH=':memory:';delete process.env.DEMO_ROUTES
 const {app,db,stop,retention}=require('../server/index.cjs'),analytics=require('../server/analytics.cjs'),images=require('../server/images.cjs')
