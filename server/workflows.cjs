@@ -97,6 +97,10 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
     return {priority,reasons:hazards.length?hazards.map(h=>'REPORTED_'+h.toUpperCase()):['DEFAULT_MEDIUM_UNVERIFIED'],reportedPriority:b.priority??null}
   }
   function candidates(c) { return db.prepare('SELECT * FROM complaints WHERE category=? AND ward=?').all(c.category,c.ward).filter(x=>x.id!==c.id&&metres(x,c)<=100) }
+  /* NOTE: the status field currently mixes work stage (In Progress / Verification
+     Pending / Reopened) with deadline state (Overdue / Escalated). Splitting stage from
+     escalation is a planned API change and is intentionally NOT done here: the frontend
+     consumes the current contract. */
   function sweep(now=Date.now()) {
     return db.transaction(()=>{
       const changes=[]
@@ -118,13 +122,21 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
       return changes
     })()
   }
+  /* Field-by-field retention policy for resolved complaints older than 90 days:
+     - deleted: evidence blobs (photos, the largest personal/location store)
+     - redacted: title, description, landmark, coordinates, ward, latestUpdate
+     - pseudonymized: author (citizen identity; aggregate stats keep counting the case)
+     - retained for accountability: category, priority, status/deadline history, officer
+       and audit actors - the minimum needed to answer "was this case handled on time".
+     Legacy append-only audit rows and operator backups are outside this sweep's reach
+     and remain flagged below for an operator policy. */
   function retention(now=Date.now()) {
-    return db.transaction(()=>{const old=db.prepare("SELECT id FROM complaints WHERE status='Resolved' AND resolvedTs<? AND (lat IS NOT NULL OR description!='[retention redacted]')").all(now-90*86400000);let removed=0;for(const c of old){removed+=db.prepare('DELETE FROM evidence WHERE complaintId=?').run(c.id).changes;db.prepare("UPDATE complaints SET lat=NULL,lon=NULL,accuracy=NULL,landmark='',description='[retention redacted]',title='[retention redacted]' WHERE id=?").run(c.id)}if(old.length)audit('PRIVACY','system','Retention sweep',null,{complaints:old.length,evidenceRemoved:removed});return {complaintsRedacted:old.length,evidenceRemoved:removed,backups:'not_managed',historicalAudit:'append_only_legacy_PII_not_removed'}})()
+    return db.transaction(()=>{const old=db.prepare("SELECT id FROM complaints WHERE status='Resolved' AND resolvedTs<? AND (lat IS NOT NULL OR description!='[retention redacted]' OR (author!='' AND author!='retention-redacted') OR ward!='[retention redacted]' OR latestUpdate!='[retention redacted]')").all(now-90*86400000);let removed=0;for(const c of old){removed+=db.prepare('DELETE FROM evidence WHERE complaintId=?').run(c.id).changes;db.prepare("UPDATE complaints SET lat=NULL,lon=NULL,accuracy=NULL,landmark='',description='[retention redacted]',title='[retention redacted]',ward='[retention redacted]',latestUpdate='[retention redacted]',author='retention-redacted' WHERE id=?").run(c.id)}if(old.length)audit('PRIVACY','system','Retention sweep',null,{complaints:old.length,evidenceRemoved:removed});return {complaintsRedacted:old.length,evidenceRemoved:removed,fieldsRedacted:['title','description','landmark','coordinates','ward','latestUpdate'],fieldsPseudonymized:['author'],retainedForAccountability:['category','priority','status history','officer','audit actors'],backups:'not_managed',historicalAudit:'append_only_legacy_PII_not_removed'}})()
   }
   function mount(app,authUser) {
     const route=(method,path,fn)=>app[method](path,(req,res,next)=>{try {const u=authUser(req); const body=req.body||{}; const result=db.transaction(()=>fn(req,u,body,res))(); if(!res.headersSent) res.json(result)} catch(e){if(e.status)res.status(e.status).json({error:e.message});else next(e)}})
     const complaint=req=>{const c=get(req.params.id);if(!c)fail(404,'Complaint not found');return c}
-    route('get','/api/capabilities',()=>({version:2,demoMode:process.env.DEMO_MODE==='true',identity:{smsOTP:process.env.PHONE_OTP_MODE==='sms'?'provider_configured_delivery_unverified':process.env.PHONE_OTP_MODE==='dev'?'dev_only_not_real_verification':'not_connected',aadhaar:'out_of_scope'},imageDetection:detector.status(),imageSimilarity:'local_dhash_review_only',predictiveRisk:'history_heuristic_not_trained',offlineSync:'idempotent_authenticated_intake',retention:'resolved_evidence_90_days_and_location_redaction',otpPrototype:'not_connected_no_free_SMS_rail',gps:'client_asserted_not_attested',jurisdictions:jurisdiction.status().status,municipality:'Ghaziabad',demoRoutes:process.env.DEMO_ROUTES==='true',languages:['en','hi'],assistedIntake:true,notifications:'internal_queue_only'}))
+    route('get','/api/capabilities',()=>({version:2,demoMode:process.env.DEMO_MODE==='true',identity:{smsOTP:process.env.PHONE_OTP_MODE==='sms'?'provider_configured_delivery_unverified':process.env.PHONE_OTP_MODE==='dev'?'dev_only_not_real_verification':'not_connected',aadhaar:'out_of_scope'},imageDetection:detector.status(),imageSimilarity:'local_dhash_review_only',predictiveRisk:'history_heuristic_not_trained',offlineSync:'idempotent_authenticated_intake',retention:'resolved_evidence_90_days_and_pii_redaction',otpPrototype:'not_connected_no_free_SMS_rail',gps:'client_asserted_not_attested',jurisdictions:jurisdiction.status().status,municipality:'Ghaziabad',demoRoutes:process.env.DEMO_ROUTES==='true',languages:['en','hi'],assistedIntake:true,notifications:'internal_queue_only'}))
     route('get','/api/translations',(req)=>({languages:['en','hi'],strings:require('./i18n.cjs').strings,regionalLanguages:'not_translated',coverage:'common errors and acknowledgement only; English fallback disclosed'}))
     route('get','/api/jurisdictions',()=>jurisdiction.status())
     route('get','/api/jurisdictions/officer-hints',(req,u)=>{if(!['reviewer','supervisor'].includes(u?.role))fail(403,'Reviewer or supervisor required');return require('./officer-hints.cjs').lookup(Number(req.query.ward))})
@@ -187,18 +199,44 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
     route('post','/api/transfers/:id/accept',(req,u)=>{const t=db.prepare('SELECT * FROM transfers WHERE id=?').get(req.params.id);if(!t)fail(404,'Transfer not found');if(u?.username!==t.target)fail(403,'Target officer required');if(t.state!=='pending')fail(409,'Transfer not pending');const c=get(t.complaintId);db.prepare("UPDATE transfers SET state='accepted' WHERE id=?").run(t.id);return {complaint:serialize(change(c,u,'Transfer accepted',{officer:u.username,accepted:1}),u)}})
     route('post','/api/complaints/:id/extensions',(req,u,b)=>{const c=complaint(req);worker(u,c);const note=reason(b.reason);if(!Number.isSafeInteger(b.deadlineTs)||b.deadlineTs<=Math.max(c.deadlineTs,Date.now())||b.deadlineTs> Date.now()+30*86400000)fail(400,'Future deadline within 30 days required');if(db.prepare("SELECT 1 FROM extensions WHERE complaintId=? AND state='pending'").get(c.id))fail(409,'Extension pending');const x=db.prepare('INSERT INTO extensions(complaintId,requester,deadlineTs,reason) VALUES (?,?,?,?)').run(c.id,u.username,b.deadlineTs,note);audit(c.id,u.username,'Extension requested',null,{id:Number(x.lastInsertRowid),reason:note,deadlineTs:b.deadlineTs});return {extensionId:Number(x.lastInsertRowid),state:'pending'}})
     route('post','/api/extensions/:id/review',(req,u,b)=>{supervisor(u);const x=db.prepare('SELECT * FROM extensions WHERE id=?').get(req.params.id);if(!x)fail(404,'Extension not found');if(x.requester===u.username)fail(403,'Independent approval required');if(x.state!=='pending')fail(409,'Already reviewed');if(x.deadlineTs<=Date.now()&&b.decision==='approve')fail(409,'Requested extension is no longer in the future');if(!['approve','deny'].includes(b.decision))fail(400,'approve or deny required');const note=reason(b.reason);db.prepare('UPDATE extensions SET state=? WHERE id=?').run(b.decision,x.id);const c=get(x.complaintId);if(b.decision==='approve')change(c,u,'Extension approved',{deadlineTs:x.deadlineTs,deadline:fmtDate(x.deadlineTs),latestUpdate:note,status:['Overdue','Escalated'].includes(c.status)?'In Progress':c.status});else audit(c.id,u.username,'Extension denied',x,{reason:note});return {state:b.decision,complaint:serialize(get(c.id),u)}})
+    /* Evidence upload, ordered so nothing expensive runs before every cheap check passes:
+       authentication, complaint access, stage, officer role, declared MIME, base64 shape,
+       encoded length, decoded byte size, file signature, per-user rate limit - and only
+       then Sharp decode (with its own pixel limits) and the optional AI detector. */
+    const uploadHits=new Map() // username -> recent validated upload timestamps (in-memory, bounded)
+    const UPLOAD_WINDOW_MS=10*60*1000, UPLOAD_MAX_PER_WINDOW=20, UPLOAD_MAP_MAX=1000
+    function uploadAllowed(username){
+      const now=Date.now(),recent=(uploadHits.get(username)||[]).filter(ts=>now-ts<UPLOAD_WINDOW_MS)
+      if(recent.length>=UPLOAD_MAX_PER_WINDOW){uploadHits.set(username,recent);return false}
+      if(!uploadHits.has(username)&&uploadHits.size>=UPLOAD_MAP_MAX)for(const k of uploadHits.keys()){uploadHits.delete(k);if(uploadHits.size<UPLOAD_MAP_MAX)break}
+      recent.push(now);uploadHits.set(username,recent);return true
+    }
     app.post('/api/complaints/:id/evidence',async(req,res,next)=>{
-      try {const u=authUser(req),c=get(req.params.id);if(!c||!member(u,c))return res.status(403).json({error:'Private evidence access required'});const b=req.body||{};if(typeof b.base64!=='string'||b.base64.length>5600000)return res.status(400).json({error:'PNG/JPEG base64 required'});req.imageInfo=await images.inspect(Buffer.from(b.base64,'base64'));req.aiSignal=await detector.predict(Buffer.from(b.base64,'base64'));next()}catch(e){res.status(400).json({error:'Image decode failed or pixel limit exceeded'})}
+      try {
+        res.setTimeout(30000)
+        const u=authUser(req),c=get(req.params.id)
+        if(!c||!member(u,c))return res.status(403).json({error:'Private evidence access required'})
+        const b=req.body||{}
+        if(!['before','after','dispute'].includes(b.stage))return res.status(400).json({error:'before, after or dispute required'})
+        if(b.stage==='after'&&!(u&&(u.role==='supervisor'||u.role==='official'&&u.username===c.officer)))return res.status(403).json({error:'Assigned officer or supervisor required'})
+        if(!['image/jpeg','image/png'].includes(b.mime)||typeof b.base64!=='string'||!/^[A-Za-z0-9+/]*={0,2}$/.test(b.base64)||b.base64.length>5600000)return res.status(400).json({error:'PNG/JPEG base64 required'})
+        const raw=Buffer.from(b.base64,'base64');if(raw.length<8||raw.length>4*1024*1024)return res.status(400).json({error:'Evidence must be 8 bytes to 4 MB'})
+        const isPNG=raw.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])),isJPEG=raw[0]===255&&raw[1]===216&&raw[2]===255
+        if(!(b.mime==='image/png'&&isPNG || b.mime==='image/jpeg'&&isJPEG))return res.status(400).json({error:'File signature mismatch'})
+        if(!uploadAllowed(u.username))return res.status(429).json({error:'Too many uploads. Try again in a few minutes.'})
+        const bytes=await images.reencode(raw) // controlled copy: re-encoded, metadata stripped
+        req.imageBytes=bytes
+        req.imageInfo=await images.inspect(bytes)
+        req.aiSignal=await detector.predict(bytes)
+        next()
+      }catch(e){res.status(400).json({error:'Image decode failed or pixel limit exceeded'})}
     })
     route('post','/api/complaints/:id/evidence',(req,u,b,res)=>{
+      // auth, access, stage, MIME, base64, byte size, signature and rate limit already
+      // validated by the middleware above, before any image processing ran.
       const c=complaint(req);if(!member(u,c))fail(403,'Private evidence access required')
-      if(!['before','after','dispute'].includes(b.stage))fail(400,'before, after or dispute required')
-      if(b.stage==='after')worker(u,c)
-      if(!['image/jpeg','image/png'].includes(b.mime)||typeof b.base64!=='string'||! /^[A-Za-z0-9+/]*={0,2}$/.test(b.base64))fail(400,'PNG/JPEG base64 required')
-      const bytes=Buffer.from(b.base64,'base64');if(bytes.length<8||bytes.length>4*1024*1024)fail(400,'Evidence must be 8 bytes to 4 MB')
-      const isPNG=bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])),isJPEG=bytes[0]===255&&bytes[1]===216&&bytes[2]===255
-      if(!(b.mime==='image/png'&&isPNG || b.mime==='image/jpeg'&&isJPEG))fail(400,'File signature mismatch')
       if(db.prepare('SELECT COUNT(*) n FROM evidence WHERE complaintId=?').get(c.id).n>=20)fail(429,'Maximum 20 evidence files per complaint')
+      const bytes=req.imageBytes
       const loc=coordinates(b),now=Date.now(),sha=crypto.createHash('sha256').update(bytes).digest('hex')
       const info=req.imageInfo
       const reasons=[req.aiSignal.reason,'EDIT_DETECTION_UNAVAILABLE','CAPTURE_METADATA_CLIENT_ASSERTED']
@@ -231,7 +269,7 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
     route('get','/api/stats/workload',(req,u)=>{supervisor(u);sweep();const rows=db.prepare("SELECT * FROM complaints WHERE author!=''").all();return {officers:[...new Set(rows.map(x=>x.officer))].map(officer=>({officer,...metrics(rows.filter(x=>x.officer===officer))})),ranking:null}})
     route('get','/api/stats/hotspots',(req,u)=>{supervisor(u);return {hotspots:analytics.clusters(db.prepare("SELECT * FROM complaints WHERE author!=''").all()),predictionModel:'not_trained',method:'150m connected components by category, 90-day window, 3 unique issues for review',limit:'Client coordinates and reporting bias; no asset failure probability'}})
     route('get','/api/stats/predictive-risk',(req,u)=>{supervisor(u);return {clusters:analytics.clusters(db.prepare("SELECT * FROM complaints WHERE author!=''").all()),model:'history_heuristic_v1',trained:false,validated:false,notice:'Prioritize site inspection, not predicted failure or automatic repair'}})
-    route('get','/api/privacy',(req,u)=>({publicDetails:'restricted',evidenceRetentionDays:90,locationRetention:'redacted with evidence after resolution retention expires',historicalAudit:'Old entries may retain PII; backups need operator policy',productionReady:false}))
+    route('get','/api/privacy',(req,u)=>({publicDetails:'restricted',evidenceRetentionDays:90,locationRetention:'coordinates, landmark and ward redacted with evidence after resolution retention expires',identityRetention:'complaint author pseudonymized at retention; officer and audit actors kept for accountability',historicalAudit:'Old entries may retain PII; backups need operator policy',productionReady:false}))
     route('post','/api/privacy/retention',(req,u)=>{supervisor(u);return retention()})
     route('post','/api/complaints/:id/impact',(req,u,b)=>{const c=complaint(req);worker(u,c);if(!['water_loss_litres','road_closure_hours','repair_cost_inr'].includes(b.metric)||typeof b.value!=='number'||!Number.isFinite(b.value)||b.value<0||b.unit!==({water_loss_litres:'litres',road_closure_hours:'hours',repair_cost_inr:'INR'})[b.metric])fail(400,'Valid metric, nonnegative value and unit required');const note=reason(b.note);db.prepare('INSERT INTO impact(complaintId,actor,metric,value,unit,note,ts) VALUES (?,?,?,?,?,?,?)').run(c.id,u.username,b.metric,b.value,text(b.unit),note,Date.now());audit(c.id,u.username,'Impact observation recorded',null,{metric:b.metric,value:b.value,unit:b.unit,source:'officer_reported'});return {recorded:true,verified:false}})
     route('get','/api/impact',(req,u)=>{supervisor(u);return {observations:db.prepare('SELECT * FROM impact ORDER BY ts DESC').all(),notice:'Reported observations only; baseline/control data and independent measurement needed to claim reduction'}})
