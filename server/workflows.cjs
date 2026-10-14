@@ -8,6 +8,7 @@ const { DEPARTMENTS } = require('./seed.cjs')
 const jurisdiction = require('./jurisdiction.cjs')
 const DEMO_WARDS = ['Ward 12 - Gomti Nagar','Ward 8 - Aliganj','Ward 3 - Hazratganj']
 const reference = require('./reference.cjs')
+const phoneLib = require('./phone.cjs')
 module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
   db.pragma('foreign_keys = ON')
   const columns = {
@@ -137,7 +138,7 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
   function mount(app,authUser) {
     const route=(method,path,fn)=>app[method](path,(req,res,next)=>{try {const u=authUser(req); const body=req.body||{}; const result=db.transaction(()=>fn(req,u,body,res))(); if(!res.headersSent) res.json(result)} catch(e){if(e.status)res.status(e.status).json({error:e.message});else next(e)}})
     const complaint=req=>{const c=get(req.params.id);if(!c)fail(404,'Complaint not found');return c}
-    route('get','/api/capabilities',()=>({version:2,demoMode:process.env.DEMO_MODE==='true',identity:{smsOTP:process.env.PHONE_OTP_MODE==='sms'?'provider_configured_delivery_unverified':process.env.PHONE_OTP_MODE==='dev'?'dev_only_not_real_verification':'not_connected',aadhaar:'out_of_scope'},imageDetection:detector.status(),imageSimilarity:'local_dhash_review_only',predictiveRisk:'history_heuristic_not_trained',offlineSync:'idempotent_authenticated_intake',retention:'resolved_evidence_90_days_and_pii_redaction',otpPrototype:'not_connected_no_free_SMS_rail',gps:'client_asserted_not_attested',jurisdictions:jurisdiction.status().status,municipality:'Ghaziabad',demoRoutes:process.env.DEMO_ROUTES==='true',languages:['en','hi'],assistedIntake:true,notifications:'internal_queue_only'}))
+    route('get','/api/capabilities',()=>({version:2,demoMode:process.env.DEMO_MODE==='true',identity:{phoneNumber:'saved_unverified_no_otp_no_sms',aadhaar:'out_of_scope'},imageDetection:detector.status(),imageSimilarity:'local_dhash_review_only',predictiveRisk:'history_heuristic_not_trained',offlineSync:'idempotent_authenticated_intake',retention:'resolved_evidence_90_days_and_pii_redaction',otpPrototype:'not_connected_no_free_SMS_rail',gps:'client_asserted_not_attested',jurisdictions:jurisdiction.status().status,municipality:'Ghaziabad',demoRoutes:process.env.DEMO_ROUTES==='true',languages:['en','hi'],assistedIntake:true,notifications:'internal_queue_only'}))
     route('get','/api/translations',(req)=>({languages:['en','hi'],strings:require('./i18n.cjs').strings,regionalLanguages:'not_translated',coverage:'common errors and acknowledgement only; English fallback disclosed'}))
     route('get','/api/jurisdictions',()=>jurisdiction.status())
     route('get','/api/jurisdictions/officer-hints',(req,u)=>{if(!['reviewer','supervisor'].includes(u?.role))fail(403,'Reviewer or supervisor required');return require('./officer-hints.cjs').lookup(Number(req.query.ward))})
@@ -164,11 +165,13 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
       if(u.role==='intake'&&!author){author='unclaimed-'+crypto.randomUUID();db.prepare('INSERT INTO users(username,passhash,name,role) VALUES (?,?,?,?)').run(author,hashPassword(crypto.randomBytes(48).toString('hex')),'Unclaimed assisted report','citizen')}
       if(!author||!db.prepare("SELECT 1 FROM users WHERE username=? AND role='citizen'").get(author))fail(400,'Known citizen account required; anonymous/offline unclaimed registration is pending')
       if(b.language&&!['en','hi'].includes(b.language))fail(400,'Supported language codes: en, hi')
+      let phone=null;if(b.phone!=null&&b.phone!==''){phone=phoneLib.normalize(b.phone);if(!phone)fail(400,'Valid Indian mobile number required (10 digits, optional +91)')}
       let geoWard=null
       if(location.lat!=null){try{const g=jurisdiction.lookup(location);geoWard=g.matched?g.ward:null}catch(e){/* invalid coords already validated by coordinates() shape; fail closed */}}
       const reasons=[...(geoWard?['GEO_WARD_MATCHED_UNVERIFIED_2022_SBM']:[location.lat==null?'GEO_WARD_NOT_CHECKED':'GEO_WARD_NOT_FOUND']),'CONTENT_UNVERIFIED',...(location.lat==null?['LOCATION_MISSING']:['GPS_CLIENT_ASSERTED']),'JURISDICTION_UNVERIFIED']
       const id='SHG-'+new Date().getFullYear()+'-'+crypto.randomBytes(6).toString('hex').toUpperCase(),deadlineTs=now+Math.min(PRIORITY_DAYS[sev.priority],reference.charterSlaDays(b.category)??Infinity)*86400000
       const c={id,title:text(b.title,140),category:b.category,description:text(b.description),ward:text(b.ward,140),landmark:text(b.landmark,200),status:r?'Assigned':'Routing Review',priority:sev.priority,submittedAt:fmtTs(now),submittedTs:now,deadline:fmtDate(deadlineTs),deadlineTs,originalDeadlineTs:deadlineTs,dept:r?.dept||'Jurisdiction review',officer:r?.officer||null,author,latestUpdate:r?'Configured prototype route assigned; jurisdiction and evidence not verified.':(geoWard?`Likely ward ${geoWard.code} (${geoWard.name}) per 2022 SBM boundaries, unverified; manual routing required.`:'Ward not matched in loaded partial 2022 boundaries: manual routing required.'),...location,issueId:id,reasons:JSON.stringify(reasons),severityReasons:JSON.stringify(sev.reasons),channel,language:b.language||'en',routeVerified:0,intakeActor:u.role==='intake'?u.username:null}
+      phoneLib.ensureColumn(db);if(phone)db.prepare('UPDATE users SET phone=? WHERE username=?').run(phone,author)
       db.prepare(`INSERT INTO complaints(${Object.keys(c).join(',')}) VALUES (${Object.keys(c).map(k=>'@'+k).join(',')})`).run(c)
       if(key)db.prepare('INSERT INTO intake_keys VALUES (?,?,?,?)').run(u.username,key,digest,id)
       audit(id,u.username,'Complaint submitted',null,{severity:sev,channel,locationTrust:'unverified'})
@@ -189,6 +192,7 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
       const next=change(c,u,'Work progress',{status:'In Progress',latestUpdate:note});sweep();return {complaint:serialize(get(next.id),u)}
     })
     route('post','/api/complaints/:id/events',()=>{fail(410,'Arbitrary timeline events disabled; use authenticated workflow endpoints')})
+    route('get','/api/complaints/:id/contact',(req,u)=>{const c=complaint(req);if(!u||!(u.role==='supervisor'||u.role==='official'&&u.username===c.officer))fail(403,'Supervisor or assigned officer required');phoneLib.ensureColumn(db);const r=db.prepare('SELECT phone FROM users WHERE username=?').get(c.author);audit(c.id,u.username,'Citizen contact viewed',null,null);return {phone:r?.phone||null,verified:false,notice:'Citizen-supplied number, not verified. No OTP or SMS is used. For case follow-up only.'}})
     route('post','/api/complaints/:id/accept',(req,u,b)=>{const c=complaint(req);worker(u,c);return {complaint:serialize(change(c,u,'Assignment accepted',{accepted:1,latestUpdate:'Assignment accepted.'}),u)}})
     route('post','/api/routes',(req,u,b)=>{
       supervisor(u);if(!Object.hasOwn(DEPARTMENTS,b.category)||!text(b.ward)||!text(b.dept))fail(400,'ward, category, dept required')

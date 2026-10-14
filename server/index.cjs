@@ -175,11 +175,8 @@ app.post('/api/logout', (req, res) => {
 })
 app.get('/api/me', (req, res) => { const u = authUser(req); if (!u) return res.status(401).json({ error: 'not logged in' }); res.json({ user: u }) })
 
-// A sender adapter is loaded only by explicit operator configuration. No default real SMS.
-const otpMode=process.env.PHONE_OTP_MODE||'disabled'
-const otpSender=otpMode==='sms'&&process.env.PHONE_OTP_SENDER_MODULE?require(path.resolve(process.env.PHONE_OTP_SENDER_MODULE)):null
-const phoneOTP=require('./phone-otp.cjs')({db,authUser,mode:otpMode,sender:otpSender,pepper:process.env.PHONE_OTP_PEPPER})
-phoneOTP.mount(app)
+// Phone numbers: saved unverified on users.phone, format-checked only. No OTP/SMS.
+require('./phone.cjs').mount({app,db,authUser})
 workflows.mount(app, authUser)
 app.use((err, req, res, next) => {
   if (err.status || err.type === 'entity.too.large') return res.status(err.status || 413).json({ error:'Invalid or oversized request' })

@@ -10,23 +10,9 @@ Four ward-numbered Assistant Engineers cover 100 unique wards. Four ward-numbere
 
 The zone page repeats 31 ward numbers across zones and has an out-of-range "880" row. Multiple zone candidates are retained; 880 is excluded, not changed to a guessed number. A/ए ward suffix meaning and alignment with the older SBM polygons remain unverified. The source has no effective date. Review before configuring local staff accounts/routes. No seed writes into users/routes. The hint endpoint requires reviewer/supervisor access and never assigns or contacts anyone.
 
-## SMS adapter, still disabled
+## SMS / OTP
 
-`server/twilio-sender.cjs` supports the Twilio Messaging API, not managed Twilio Verify. It is tested with injected HTTP mocks only, no SMS transmission. Its custom OTP body is NOT a promise of trial eligibility or approved DLT template. A restricted trial that only accepts provider templates cannot use this adapter unchanged.
-
-Before activation: user-approved account/route, current India eligibility/pricing/template checks, consenting controlled recipients and delivery testing. Supply secrets through secure vault/server environment, never chat or repo. No signup or spending took place.
-
-Operator environment after these checks:
-- PHONE_OTP_MODE=sms
-- PHONE_OTP_SENDER_MODULE=./server/twilio-sender.cjs
-- PHONE_OTP_PEPPER: persistent private value of at least 32 bytes
-- TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN
-- TWILIO_FROM or TWILIO_MESSAGING_SERVICE_SID
-- TWILIO_ROUTE_APPROVED=true only after approval of route, body and costs
-
-Provider acceptance is not confirmed delivery. Rejection/malformed receipts fail closed. Do not switch to sms with mocked credentials or a demo sender.
-Reference: https://www.twilio.com/docs/messaging/api/message-resource
-Trial/product findings and India caveats remain in PHONE_OTP.md.
+Removed at the owner's request. The phone number is saved unverified (see README, "Phone number"). No SMS is sent anywhere.
 
 ## Real-image evaluation
 
@@ -55,7 +41,7 @@ Need frontend repository/URL or ZIP to test its actual requests; none was suppli
 5. Assigned worker accepts assignment, uploads before/after PNG/JPEG base64 through private evidence endpoint, submits repair. Owner or reviewer approves; repair submitter cannot approve. Direct Resolved status is blocked. Owner-only dispute reopens a resolved record.
 6. Public tracking deliberately hides title, description, exact location, private notes, timeline and images. Use authenticated owner/staff views for private fields. Handle 400/401/403/409/429/503; display human-review uncertainty, not fabricated verification badges.
 7. Hindi/English common API strings exist, not full UI accessibility or regional translation. No actual offline frontend/IVR, phone-only signup, safe assisted claiming or live officer notifications yet.
-8. Run the frontend with this backend and check citizen intake, tracking, auth expiry, private-image denial, staff acceptance, closure/dispute, OTP disabled/failure states, retries and CORS. Passing backend HTTP tests is not proof this frontend works.
+8. Run the frontend with this backend and check citizen intake, tracking, auth expiry, private-image denial, staff acceptance, closure/dispute, phone number format errors, retries and CORS. Passing backend HTTP tests is not proof this frontend works.
 
 ## Remaining 18 partial items
 

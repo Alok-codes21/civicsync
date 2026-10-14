@@ -16,7 +16,7 @@ Seed: `data/ghaziabad/seed-v1.json` (version 1, verified 2026-10-14, flagged sta
 Ward boundaries are 2022 SBM polygons, 94 of 100 wards, unverified hints.
 
 ## Limitations to say out loud
-- Not a live integration. Not an official export. No real SMS or municipal systems.
+- Not a live integration. Not an official export. No SMS or municipal systems. Citizen phone number is saved as an unverified contact (staff-only, no OTP).
 - Client GPS and photos can be faked; AI image score is an experimental flag for human review only, never a decision.
 - Demo accounts and routes are public sample identities. Rate limits are in memory.
 - Reviewer and supervisor roles are broad in this prototype.
