@@ -4,7 +4,7 @@
    Scenario B: file -> deadline missed (clock moved in demo only) -> escalation L1-L3 -> repair -> dispute -> In Progress
                -> repair again -> approve -> owner reopens after Resolved.
    Sample accounts and routes are demo-only identities; no municipal integration is claimed. */
-process.env.DEMO_MODE='true';process.env.DB_PATH=':memory:';process.env.AI_DETECTOR='off';delete process.env.DEMO_ROUTES
+process.env.DEMO_MODE='true';process.env.DB_PATH=':memory:';process.env.AI_DETECTOR='off';process.env.DEMO_GHAZIABAD_ROUTES='true';delete process.env.DEMO_ROUTES
 const sharp=require('sharp')
 const {app,db,sweep,stop}=require('../server/index.cjs')
 const server=app.listen(0),base='http://127.0.0.1:'+server.address().port
@@ -19,6 +19,7 @@ async function main(){
   for(const u of ['alok','verma','reviewer','supervisor'])tok[u]=(await call('/api/login',{username:u,password:'demo123'})).token
   say('Charter SLA reference (public pages, copied, not live): '+(await call('/api/reference/charter')).categorySla['Garbage Collection'].basis)
   const loc=await call('/api/reference/locality?q=Ghukna');say(`Locality "Ghukna" -> ${loc.result} (wards ${loc.wards.join(',')}); human review required, no auto-assign`)
+  const d0=await call('/api/complaints',{title:'Demo: seeded route',description:'Synthetic',category:'Garbage Collection',ward:'Ghaziabad Ward 50'},'alok');say(`Seeded DEMO route (ward 50 has one zone): ${d0.complaint.status}, dept "${d0.complaint.dept}", officer ${d0.complaint.officer} (demo account, unverified)`)
   say('\n== Scenario A: success path ==')
   let a=await file('Garbage Collection','Garbage pile near market');say(`A1 filed ${a}: ${status(a).status} (no route configured, so no guessing)`)
   const sg=(await call(`/api/complaints/${a}`,null,'supervisor')).complaint.routingSuggestion;say(`A1b supervisor sees suggestion only: ward ${sg.wardId}, ${sg.department}/${sg.charterRole}, ${sg.staffHints.length} staff name hints, status ${sg.status}, nothing assigned`)

@@ -41,6 +41,7 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
   if (process.env.DEMO_MODE === 'true') {
     const users = [['alok','Citizen','citizen'],['citizen2','Second citizen','citizen'],['verma','Demo officer','official'],['reviewer','Independent demo reviewer','reviewer'],['supervisor','Demo supervisor','supervisor'],['assisted','Assisted reporting desk','intake']]
     for (const [u,n,r] of users) if (!db.prepare('SELECT 1 FROM users WHERE username=?').get(u)) db.prepare('INSERT INTO users(username,passhash,name,role) VALUES (?,?,?,?)').run(u,hashPassword('demo123'),n,r)
+    if (process.env.DEMO_GHAZIABAD_ROUTES === 'true') for (const r of reference.demoRoutes()) db.prepare('INSERT OR IGNORE INTO routes VALUES (?,?,?,?,?,0)').run(r.ward,r.category,r.dept,r.officer,r.supervisor)
     if (process.env.DEMO_ROUTES === 'true') for (const ward of DEMO_WARDS) for (const [category,dept] of Object.entries(DEPARTMENTS)) db.prepare('INSERT OR IGNORE INTO routes VALUES (?,?,?,?,?,0)').run(ward,category,dept,'verma','supervisor')
   }
   function configuredRoute(ward, category) {

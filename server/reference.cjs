@@ -61,3 +61,21 @@ function suggestRoute({ ward, landmark, category }) {
   }
 }
 module.exports.suggestRoute = suggestRoute
+
+/* DEMO ONLY. Rows for the routes table when DEMO_MODE=true and DEMO_GHAZIABAD_ROUTES=true.
+   Only wards with a single zone entry on the official page, and only categories with one charter
+   department. Officer/supervisor are the labelled demo accounts, never real Ghaziabad staff.
+   Route key is the exact complaint ward text "Ghaziabad Ward N". */
+function demoRoutes() {
+  const hints = require('../data/ghaziabad/officer-hints.json')
+  const rows = []
+  for (const [w, zones] of Object.entries(hints.zoneCandidates)) {
+    if (zones.length !== 1) continue
+    for (const [category, c] of Object.entries(seed.categoryDepartments)) {
+      if (!c || !Array.isArray(c.departments) || c.ambiguous || c.departments.length !== 1) continue
+      rows.push({ ward: 'Ghaziabad Ward ' + w, category, dept: `DEMO - ${c.departments[0]} (not real Ghaziabad staff)`, officer: 'verma', supervisor: 'supervisor' })
+    }
+  }
+  return rows
+}
+module.exports.demoRoutes = demoRoutes

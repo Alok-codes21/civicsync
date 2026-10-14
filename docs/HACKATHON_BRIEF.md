@@ -17,6 +17,8 @@ Ward boundaries are 2022 SBM polygons, 94 of 100 wards, unverified hints.
 
 Routing: the routes table is intentionally empty. Supervisors see an unverified suggestion (ward, charter department, staff names) and confirm; nothing is auto-assigned because real staff accounts do not exist.
 
+Demo routes: `npm run demo` seeds labelled DEMO routes (demo officer account, single-zone wards only). They are not real Ghaziabad staff or assignments.
+
 ## Limitations to say out loud
 - Not a live integration. Not an official export. No SMS or municipal systems. Citizen phone number is saved as an unverified contact (staff-only, no OTP).
 - Client GPS and photos can be faked; AI image score is an experimental flag for human review only, never a decision.
@@ -27,7 +29,7 @@ Routing: the routes table is intentionally empty. Supervisors see an unverified 
 ## Run
 ```
 npm ci
-npm test          # 80 tests
+npm test          # 84 tests
 npm run demo      # scripted success + overdue/dispute/escalation/reopen scenarios, in memory
 DEMO_MODE=true npm start   # API on 127.0.0.1:3001
 ```

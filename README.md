@@ -153,3 +153,7 @@ Phone-only signup/login, recovery and number ownership checks are not implemente
 ## Routing suggestions (read-only)
 
 A complaint in Routing Review shows reviewers/supervisors a `routingSuggestion`: ward (from the complaint's own text or an exact unique locality name), charter department/role, and staff names from the public Officer's List. It is unverified, never assigned, never creates accounts, and the `routes` table stays empty until a supervisor configures a route. Ambiguous or missing matches show no ward. Staff list re-checked 2026-10-14 (names, designations and wards only, no phone numbers).
+
+### Demo routes (demo mode only)
+
+With `DEMO_MODE=true DEMO_GHAZIABAD_ROUTES=true` (the `npm run demo` script sets both) the routes table is filled for wards with a single zone entry on the official page and categories with one charter department (Garbage, Streetlights, Roads, Water, Parks). Key is the exact ward text `Ghaziabad Ward N`. Department is labelled `DEMO - <dept> (not real Ghaziabad staff)`, officer is the demo account `verma`, supervisor is `supervisor`, `verified` stays 0. Off by default. Multi-zone wards, Drainage and Other still go to Routing Review. Not real Ghaziabad staff or assignments.
