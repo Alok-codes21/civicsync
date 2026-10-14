@@ -25,7 +25,7 @@ Ward boundaries are 2022 SBM polygons, 94 of 100 wards, unverified hints.
 ## Run
 ```
 npm ci
-npm test          # 82 tests
+npm test          # 76 tests
 npm run demo      # scripted success + overdue/dispute/escalation/reopen scenarios, in memory
 DEMO_MODE=true npm start   # API on 127.0.0.1:3001
 ```
