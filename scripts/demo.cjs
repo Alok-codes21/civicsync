@@ -39,7 +39,7 @@ async function main(){
   await evidence(b,'before','alok',7);await evidence(b,'after','verma',11)
   await call(`/api/complaints/${b}/repair`,{note:'Cleared'},'verma');say(`B4 repair submitted: ${status(b).status}`)
   await call(`/api/complaints/${b}/verify`,{decision:'dispute',reason:'Still overflowing'},'alok');say(`B5 owner disputes pending repair: ${status(b).status} (rule: In Progress, not Reopened)`)
-  await evidence(b,'after','verma',13);await call(`/api/complaints/${b}/repair`,{note:'Cleared again'},'verma')
+  await evidence(b,'before','alok',17);await evidence(b,'after','verma',13);await call(`/api/complaints/${b}/repair`,{note:'Cleared again'},'verma')
   await call(`/api/complaints/${b}/verify`,{decision:'approve',reason:'Now fixed'},'reviewer');say(`B6 independent reviewer approved: ${status(b).status}`)
   await call(`/api/complaints/${b}/status`,{status:'Reopened',note:'Problem is back after rain'},'alok');say(`B7 owner reopens after Resolved: ${status(b).status}, reopenCount ${status(b).reopenCount}`)
   const audit=await call('/api/audit',null,'supervisor');say(`\nAudit chain valid: ${audit.valid} (${audit.events.length} events, local hash chain, not externally anchored)`)
