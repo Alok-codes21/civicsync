@@ -7,6 +7,7 @@ const detector = require('./detector.cjs')
 const { DEPARTMENTS } = require('./seed.cjs')
 const jurisdiction = require('./jurisdiction.cjs')
 const DEMO_WARDS = ['Ward 12 - Gomti Nagar','Ward 8 - Aliganj','Ward 3 - Hazratganj']
+const reference = require('./reference.cjs')
 module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
   db.pragma('foreign_keys = ON')
   const columns = {
@@ -140,6 +141,8 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
     route('get','/api/translations',(req)=>({languages:['en','hi'],strings:require('./i18n.cjs').strings,regionalLanguages:'not_translated',coverage:'common errors and acknowledgement only; English fallback disclosed'}))
     route('get','/api/jurisdictions',()=>jurisdiction.status())
     route('get','/api/jurisdictions/officer-hints',(req,u)=>{if(!['reviewer','supervisor'].includes(u?.role))fail(403,'Reviewer or supervisor required');return require('./officer-hints.cjs').lookup(Number(req.query.ward))})
+    route('get','/api/reference/charter',()=>reference.charter())
+    route('get','/api/reference/locality',(req)=>{const m=reference.matchLocality(String(req.query.q||'').slice(0,140));return {...m,requiresHumanReview:true,automaticAssignment:false,...reference.staleness(),source:reference.seed.wardLocalities.source}})
     route('get','/api/jurisdictions/lookup',(req)=>{
       const location=coordinates({lat:req.query.lat==null?null:Number(req.query.lat),lon:req.query.lon==null?null:Number(req.query.lon)},true)
       return jurisdiction.lookup(location)
@@ -164,7 +167,7 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
       let geoWard=null
       if(location.lat!=null){try{const g=jurisdiction.lookup(location);geoWard=g.matched?g.ward:null}catch(e){/* invalid coords already validated by coordinates() shape; fail closed */}}
       const reasons=[...(geoWard?['GEO_WARD_MATCHED_UNVERIFIED_2022_SBM']:[location.lat==null?'GEO_WARD_NOT_CHECKED':'GEO_WARD_NOT_FOUND']),'CONTENT_UNVERIFIED',...(location.lat==null?['LOCATION_MISSING']:['GPS_CLIENT_ASSERTED']),'JURISDICTION_UNVERIFIED']
-      const id='SHG-'+new Date().getFullYear()+'-'+crypto.randomBytes(6).toString('hex').toUpperCase(),deadlineTs=now+PRIORITY_DAYS[sev.priority]*86400000
+      const id='SHG-'+new Date().getFullYear()+'-'+crypto.randomBytes(6).toString('hex').toUpperCase(),deadlineTs=now+Math.min(PRIORITY_DAYS[sev.priority],reference.charterSlaDays(b.category)??Infinity)*86400000
       const c={id,title:text(b.title,140),category:b.category,description:text(b.description),ward:text(b.ward,140),landmark:text(b.landmark,200),status:r?'Assigned':'Routing Review',priority:sev.priority,submittedAt:fmtTs(now),submittedTs:now,deadline:fmtDate(deadlineTs),deadlineTs,originalDeadlineTs:deadlineTs,dept:r?.dept||'Jurisdiction review',officer:r?.officer||null,author,latestUpdate:r?'Configured prototype route assigned; jurisdiction and evidence not verified.':(geoWard?`Likely ward ${geoWard.code} (${geoWard.name}) per 2022 SBM boundaries, unverified; manual routing required.`:'Ward not matched in loaded partial 2022 boundaries: manual routing required.'),...location,issueId:id,reasons:JSON.stringify(reasons),severityReasons:JSON.stringify(sev.reasons),channel,language:b.language||'en',routeVerified:0,intakeActor:u.role==='intake'?u.username:null}
       db.prepare(`INSERT INTO complaints(${Object.keys(c).join(',')}) VALUES (${Object.keys(c).map(k=>'@'+k).join(',')})`).run(c)
       if(key)db.prepare('INSERT INTO intake_keys VALUES (?,?,?,?)').run(u.username,key,digest,id)
@@ -176,7 +179,7 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
       if(b.status==='Reopened'){
         if(u?.username!==c.author)fail(403,'Only complaint owner may reopen')
         if(c.status!=='Resolved')fail(409,'Only resolved complaints can reopen')
-        const deadlineTs=Date.now()+PRIORITY_DAYS[c.priority]*86400000
+        const deadlineTs=Date.now()+Math.min(PRIORITY_DAYS[c.priority],reference.charterSlaDays(c.category)??Infinity)*86400000
         return {complaint:serialize(change(c,u,'Citizen dispute',{status:'Reopened',latestUpdate:note,deadlineTs,deadline:fmtDate(deadlineTs),escalationLevel:0,resolvedTs:null,reopenCount:c.reopenCount+1,repairActor:null}),u)}
       }
       worker(u,c)

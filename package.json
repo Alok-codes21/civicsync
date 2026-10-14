@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node server/index.cjs",
     "setup:detector": "node scripts/download-model.cjs",
-    "test": "node --test test/*.cjs"
+    "test": "node --test test/*.cjs",
+    "demo": "node scripts/demo.cjs"
   },
   "engines": {
     "node": ">=20.9.0"

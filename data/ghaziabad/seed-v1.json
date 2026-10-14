@@ -1,0 +1,1847 @@
+{
+ "seedVersion": 1,
+ "verifiedAt": "2026-10-14",
+ "verifiedBy": "automated fetch of official pages + manual structure review; not confirmed by Nagar Nigam",
+ "staleAfterDays": 180,
+ "municipality": "Ghaziabad",
+ "sources": {
+  "charter": "https://ghaziabadnagarnigam.in/citizen-charter.aspx",
+  "wards": "https://ghaziabadnagarnigam.in/zones-and-wards.aspx",
+  "staff": "https://ghaziabadnagarnigam.in/staffList.aspx",
+  "health": "https://ghaziabadnagarnigam.in/health-department.aspx"
+ },
+ "charter": {
+  "source": "https://ghaziabadnagarnigam.in/citizen-charter.aspx",
+  "notes": [
+   "SLA in days, as printed on the page",
+   "Row 'Tubewell malfunction 7D JE' has malformed HTML on the source page; read from page text, kept out of this seed unless re-verified",
+   "'Barren land to be Greened' appears twice (7D and 1D); conflicting, flagged, not used for any category SLA",
+   "Source page has no effective date"
+  ],
+  "rows": [
+   {
+    "department": "HEALTH",
+    "category": "Cleanliness Issues",
+    "subCategory": "Burning of garbage, leaves, plastic etc.",
+    "slaDays": 1,
+    "officer": "SAFAI NAYAK"
+   },
+   {
+    "department": "HEALTH",
+    "category": "Cleanliness Issues",
+    "subCategory": "Cleaning of drain (1 meter wide)",
+    "slaDays": 1,
+    "officer": "SAFAI NAYAK"
+   },
+   {
+    "department": "HEALTH",
+    "category": "Cleanliness Issues",
+    "subCategory": "Drain cleaning",
+    "slaDays": 1,
+    "officer": "SAFAI NAYAK"
+   },
+   {
+    "department": "HEALTH",
+    "category": "Cleanliness Issues",
+    "subCategory": "Fogging work",
+    "slaDays": 1,
+    "officer": "SAFAI NAYAK"
+   },
+   {
+    "department": "HEALTH",
+    "category": "Cleanliness Issues",
+    "subCategory": "Garbage collection from quarantine area",
+    "slaDays": 1,
+    "officer": "SAFAI NAYAK"
+   },
+   {
+    "department": "HEALTH",
+    "category": "Cleanliness Issues",
+    "subCategory": "Garbage dumped on public land",
+    "slaDays": 1,
+    "officer": "SAFAI NAYAK"
+   },
+   {
+    "department": "HEALTH",
+    "category": "Cleanliness Issues",
+    "subCategory": "Garbage house cleaning",
+    "slaDays": 1,
+    "officer": "SAFAI NAYAK"
+   },
+   {
+    "department": "HEALTH",
+    "category": "Cleanliness Issues",
+    "subCategory": "Garbage pile",
+    "slaDays": 1,
+    "officer": "SAFAI NAYAK"
+   },
+   {
+    "department": "HEALTH",
+    "category": "Cleanliness Issues",
+    "subCategory": "Garbage vehicle did not arrive",
+    "slaDays": 1,
+    "officer": "SAFAI NAYAK"
+   },
+   {
+    "department": "HEALTH",
+    "category": "Cleanliness Issues",
+    "subCategory": "Overflowing dhalao",
+    "slaDays": 1,
+    "officer": "SAFAI NAYAK"
+   },
+   {
+    "department": "HEALTH",
+    "category": "Cleanliness Issues",
+    "subCategory": "Public toilet cleaning",
+    "slaDays": 1,
+    "officer": "SAFAI NAYAK"
+   },
+   {
+    "department": "HEALTH",
+    "category": "Cleanliness Issues",
+    "subCategory": "Road cleaning",
+    "slaDays": 1,
+    "officer": "SAFAI NAYAK"
+   },
+   {
+    "department": "HEALTH",
+    "category": "Cleanliness Issues",
+    "subCategory": "Sandpile On Roadside",
+    "slaDays": 1,
+    "officer": "SAFAI NAYAK"
+   },
+   {
+    "department": "HEALTH",
+    "category": "Cleanliness Issues",
+    "subCategory": "Sanitizing in quarantine area",
+    "slaDays": 1,
+    "officer": "SAFAI NAYAK"
+   },
+   {
+    "department": "HEALTH",
+    "category": "Cleanliness Issues",
+    "subCategory": "Stinking water on the road due to drain overflow",
+    "slaDays": 1,
+    "officer": "SAFAI NAYAK"
+   },
+   {
+    "department": "HEALTH",
+    "category": "Cleanliness Issues",
+    "subCategory": "Dead Animal ( like dog , cat , bird etc)",
+    "slaDays": 1,
+    "officer": "SAFAI NAYAK"
+   },
+   {
+    "department": "CIVIL",
+    "category": "Construction",
+    "subCategory": "Broken Footpath",
+    "slaDays": 7,
+    "officer": "JUNIOR ENGINEER (J.E)"
+   },
+   {
+    "department": "CIVIL",
+    "category": "Construction",
+    "subCategory": "Construction Without Safegurards",
+    "slaDays": 7,
+    "officer": "JUNIOR ENGINEER (J.E)"
+   },
+   {
+    "department": "CIVIL",
+    "category": "Construction",
+    "subCategory": "Malba, bricks, boris etc. dumped on public land",
+    "slaDays": 2,
+    "officer": "JUNIOR ENGINEER (J.E)"
+   },
+   {
+    "department": "CIVIL",
+    "category": "Construction",
+    "subCategory": "Pothole",
+    "slaDays": 4,
+    "officer": "JUNIOR ENGINEER (J.E)"
+   },
+   {
+    "department": "CIVIL",
+    "category": "Construction",
+    "subCategory": "Quality of construction work being carried out",
+    "slaDays": 1,
+    "officer": "JUNIOR ENGINEER (J.E)"
+   },
+   {
+    "department": "CIVIL",
+    "category": "Construction",
+    "subCategory": "Repair of drainage",
+    "slaDays": 7,
+    "officer": "JUNIOR ENGINEER (J.E)"
+   },
+   {
+    "department": "CIVIL",
+    "category": "Construction",
+    "subCategory": "Road repair",
+    "slaDays": 7,
+    "officer": "JUNIOR ENGINEER (J.E)"
+   },
+   {
+    "department": "CIVIL",
+    "category": "Construction",
+    "subCategory": "Theft of construction materials",
+    "slaDays": 1,
+    "officer": "JUNIOR ENGINEER (J.E)"
+   },
+   {
+    "department": "CIVIL",
+    "category": "Construction",
+    "subCategory": "Unpaved Road",
+    "slaDays": 2,
+    "officer": "JUNIOR ENGINEER (J.E)"
+   },
+   {
+    "department": "CIVIL",
+    "category": "Encroachment",
+    "subCategory": "Permanent encroachment on road / drain / drain Civil",
+    "slaDays": 10,
+    "officer": "JUNIOR ENGINEER (J.E)"
+   },
+   {
+    "department": "WATER-WORKS",
+    "category": "Cleanliness Issues",
+    "subCategory": "Pond Cleaning",
+    "slaDays": 30,
+    "officer": "JUNIOR ENGINEER (J.E)"
+   },
+   {
+    "department": "WATER-WORKS",
+    "category": "Water",
+    "subCategory": "Drinking water pipeline leakage",
+    "slaDays": 7,
+    "officer": "JUNIOR ENGINEER (J.E)"
+   },
+   {
+    "department": "WATER-WORKS",
+    "category": "Water",
+    "subCategory": "Hand pump failure",
+    "slaDays": 1,
+    "officer": "JUNIOR ENGINEER (J.E)"
+   },
+   {
+    "department": "WATER-WORKS",
+    "category": "Water",
+    "subCategory": "Non-availability of Drinking Water - Dirty Water",
+    "slaDays": 1,
+    "officer": "JUNIOR ENGINEER (J.E)"
+   },
+   {
+    "department": "WATER-WORKS",
+    "category": "Water",
+    "subCategory": "Public Toilet Water Supply",
+    "slaDays": 1,
+    "officer": "JUNIOR ENGINEER (J.E)"
+   },
+   {
+    "department": "SEWER",
+    "category": "Sewer Issues",
+    "subCategory": "Damage Main Hole",
+    "slaDays": 3,
+    "officer": "Supervisior"
+   },
+   {
+    "department": "SEWER",
+    "category": "Sewer Issues",
+    "subCategory": "Damage Sewer line",
+    "slaDays": 15,
+    "officer": "Supervisior"
+   },
+   {
+    "department": "SEWER",
+    "category": "Sewer Issues",
+    "subCategory": "Improper disposal of fecal waste / silt",
+    "slaDays": 3,
+    "officer": "Supervisior"
+   },
+   {
+    "department": "SEWER",
+    "category": "Sewer Issues",
+    "subCategory": "Sewer blockage in public Toilet",
+    "slaDays": 1,
+    "officer": "Supervisior"
+   },
+   {
+    "department": "SEWER",
+    "category": "Sewer Issues",
+    "subCategory": "Sewer Choking - Overflow",
+    "slaDays": 1,
+    "officer": "Supervisior"
+   },
+   {
+    "department": "SEWER",
+    "category": "Sewer Issues",
+    "subCategory": "Sewer Manhole Open",
+    "slaDays": 1,
+    "officer": "Supervisior"
+   },
+   {
+    "department": "SEWER",
+    "category": "Sewer Issues",
+    "subCategory": "There is water on the road due to Sewer Overflow",
+    "slaDays": 3,
+    "officer": "Supervisior"
+   },
+   {
+    "department": "STREET - LIGHT",
+    "category": "Light",
+    "subCategory": "Park light failure",
+    "slaDays": 1,
+    "officer": "Light Inspector (LI)"
+   },
+   {
+    "department": "STREET - LIGHT",
+    "category": "Light",
+    "subCategory": "Park lights are on continuously",
+    "slaDays": 1,
+    "officer": "Light Inspector (LI)"
+   },
+   {
+    "department": "STREET - LIGHT",
+    "category": "Light",
+    "subCategory": "Street light failure",
+    "slaDays": 1,
+    "officer": "Light Inspector (LI)"
+   },
+   {
+    "department": "STREET - LIGHT",
+    "category": "Light",
+    "subCategory": "Street light is on continuously",
+    "slaDays": 1,
+    "officer": "Light Inspector (LI)"
+   },
+   {
+    "department": "PROPERTY",
+    "category": "Enchroachment",
+    "subCategory": "Encroachment on municipal land",
+    "slaDays": 15,
+    "officer": "Inspector"
+   },
+   {
+    "department": "PROPERTY",
+    "category": "Enchroachment",
+    "subCategory": "Related to Nagar Nigam parking",
+    "slaDays": 48,
+    "officer": "Tax -Supritendent(TS)"
+   },
+   {
+    "department": "HORTICULTURE",
+    "category": "Encroachment",
+    "subCategory": "Park encroachment",
+    "slaDays": 7,
+    "officer": "supervisor"
+   },
+   {
+    "department": "HORTICULTURE",
+    "category": "Horticulture",
+    "subCategory": "Barren land to be Greened",
+    "slaDays": 7,
+    "officer": "supervisor"
+   },
+   {
+    "department": "HORTICULTURE",
+    "category": "Horticulture",
+    "subCategory": "Barren land to be Greened",
+    "slaDays": 1,
+    "officer": "supervisor"
+   },
+   {
+    "department": "HORTICULTURE",
+    "category": "Horticulture",
+    "subCategory": "Cleaning of parks and green belts under the corporation",
+    "slaDays": 1,
+    "officer": "supervisor"
+   },
+   {
+    "department": "HORTICULTURE",
+    "category": "Horticulture",
+    "subCategory": "Horticulture in parks under the Corporation",
+    "slaDays": 7,
+    "officer": "supervisor"
+   },
+   {
+    "department": "HORTICULTURE",
+    "category": "Horticulture",
+    "subCategory": "In relation to Summersible in the Park",
+    "slaDays": 1,
+    "officer": "supervisor"
+   },
+   {
+    "department": "IT",
+    "category": "IT",
+    "subCategory": "In relation to the website of the Municipal Corporation or any other portal created",
+    "slaDays": 48,
+    "officer": "I.T Officer"
+   },
+   {
+    "department": "Property-tax",
+    "category": "Encroachment",
+    "subCategory": "Temporary encroachment on road, drain",
+    "slaDays": 5,
+    "officer": "Revenue Inspector (RI)"
+   },
+   {
+    "department": "Property-tax",
+    "category": "Mutation",
+    "subCategory": "Propblem in Mutation",
+    "slaDays": 45,
+    "officer": "Revenue Inspector (RI)"
+   },
+   {
+    "department": "Property-tax",
+    "category": "Taxes",
+    "subCategory": "Nomination in property tax",
+    "slaDays": 48,
+    "officer": "Revenue Inspector (RI)"
+   },
+   {
+    "department": "Property-tax",
+    "category": "Taxes",
+    "subCategory": "Regarding payment of property tax",
+    "slaDays": 48,
+    "officer": "Revenue Inspector (RI)"
+   },
+   {
+    "department": "Property-tax",
+    "category": "Taxes",
+    "subCategory": "User-Charges Issue of BILLs",
+    "slaDays": 48,
+    "officer": "Revenue Inspector (RI)"
+   },
+   {
+    "department": "Property-tax",
+    "category": "Trade-License",
+    "subCategory": "Issue of trade license",
+    "slaDays": 48,
+    "officer": "Revenue Inspector (RI)"
+   },
+   {
+    "department": "B.O.T",
+    "category": "Encroachment",
+    "subCategory": "Unauthorized Hoardings",
+    "slaDays": 4,
+    "officer": "(ZSO)"
+   },
+   {
+    "department": "ANIMAL - WELFARE",
+    "category": "Animal",
+    "subCategory": "Regarding castration of destitute swans/dogs-new",
+    "slaDays": 7,
+    "officer": "(IO)"
+   },
+   {
+    "department": "ANIMAL - WELFARE",
+    "category": "Animal",
+    "subCategory": "Related to capturing helpless animals (Dogs/Cow/Bull)",
+    "slaDays": 2,
+    "officer": "(IO)"
+   },
+   {
+    "department": "ANIMAL - WELFARE",
+    "category": "Animal",
+    "subCategory": "Related to lifting large dead animals like cow, horse etc",
+    "slaDays": 12,
+    "officer": "(IO)"
+   },
+   {
+    "department": "ANIMAL - WELFARE",
+    "category": "Cleanliness Issues",
+    "subCategory": "Dead Animal",
+    "slaDays": 12,
+    "officer": "(IO)"
+   },
+   {
+    "department": "ANIMAL - WELFARE",
+    "category": "Dairy",
+    "subCategory": "Illegal Dairy",
+    "slaDays": 15,
+    "officer": "(IO)"
+   }
+  ]
+ },
+ "categorySla": {
+  "Garbage Collection": {
+   "slaDays": 1,
+   "basis": "All 16 HEALTH/Cleanliness Issues rows are 1D (Safai Nayak)",
+   "ambiguous": false
+  },
+  "Streetlights & Electricity": {
+   "slaDays": 1,
+   "basis": "All 4 STREET-LIGHT rows are 1D (Light Inspector). Electricity Board issues are not covered by the charter",
+   "ambiguous": false
+  },
+  "Roads & Potholes": {
+   "slaDays": null,
+   "basis": "CIVIL rows range 1D-10D (pothole 4D, road repair 7D, unpaved road 2D); sub-category needed",
+   "ambiguous": true,
+   "rangeDays": [
+    1,
+    10
+   ]
+  },
+  "Water Supply & Leakage": {
+   "slaDays": null,
+   "basis": "WATER-WORKS rows range 1D-7D; sub-category needed",
+   "ambiguous": true,
+   "rangeDays": [
+    1,
+    7
+   ]
+  },
+  "Drainage & Sewage": {
+   "slaDays": null,
+   "basis": "SEWER rows 1D-15D, HEALTH drain rows 1D; sub-category needed",
+   "ambiguous": true,
+   "rangeDays": [
+    1,
+    15
+   ]
+  },
+  "Parks & Public Spaces": {
+   "slaDays": null,
+   "basis": "HORTICULTURE rows 1D-7D, one conflicting duplicate row",
+   "ambiguous": true,
+   "rangeDays": [
+    1,
+    7
+   ]
+  },
+  "Other Civic Issues": {
+   "slaDays": null,
+   "basis": "No single charter category",
+   "ambiguous": true,
+   "rangeDays": null
+  }
+ },
+ "healthDepartment": {
+  "source": "https://ghaziabadnagarnigam.in/health-department.aspx",
+  "use": "routing context only",
+  "finding": "Page (Hindi text) says the health department handles garbage lifting, sweeping, large and small drain cleaning and births/deaths registration. Used only to support Garbage Collection and drain-cleaning routing hints; no structured data."
+ },
+ "helpline": {
+  "source": "https://ghaziabadnagarnigam.in/citizen-charter.aspx",
+  "numbers": "1800-1803-012, 1533 (sewer/septic 14420)",
+  "note": "Department helpline as printed in the site footer; not a personal contact"
+ },
+ "wardLocalities": {
+  "source": "https://ghaziabadnagarnigam.in/zones-and-wards.aspx",
+  "note": "Ward ids are strings. Locality names copied as printed, 'OTHER' removed. Names repeat across wards (e.g. Ghukna, Bonjha-C), which is why ambiguous matches go to human routing review.",
+  "excludedRows": [
+   "880"
+  ],
+  "wards": {
+   "6": [
+    "Akber Pur Bahrampur"
+   ],
+   "8": [
+    "Baradari",
+    "Deenagarhi",
+    "Maliwara",
+    "Nehru Nagar-II C Block",
+    "Nehru Nagar-II E Block",
+    "Nehru Nagar-II F Block",
+    "Prangarhi",
+    "Ramagarhi"
+   ],
+   "9": [
+    "D.L.F.",
+    "Shalimar Garden Main"
+   ],
+   "11": [
+    "Adarsh Nagar",
+    "Krishna Kunj",
+    "Nanadgram E Block",
+    "New Basti Nandgram",
+    "Patel Nagar-J Block",
+    "Utranchal Nagar",
+    "Viklang Colony",
+    "Vishwas Nagar"
+   ],
+   "12": [
+    "Balu Pura",
+    "Bazar Dasna Gate",
+    "ChandraPuri",
+    "Hardev Sahay",
+    "Jatwada",
+    "Kalka Gardhi",
+    "KalluPura-C",
+    "Kanjimal",
+    "Nehru Housing Society",
+    "Paccha Dan",
+    "Prempuri",
+    "Sukhimal"
+   ],
+   "13": [
+    "Ghukna"
+   ],
+   "16": [
+    "(LAND CRAFT) GOLF LINK TOWER 1B",
+    "(LAND CRAFT) GOLF LINK TOWER 2B",
+    "(LAND CRAFT) GOLF LINK TOWER 3B",
+    "21st Milestone Tower-A",
+    "ADITYA WORLD CITY",
+    "URBAN HOME-G BLOCK",
+    "B.S.R. Audhyogik Chetra P Block",
+    "BSR /Loha Mandi",
+    "CITY APARTMENTS (TOWER-A)",
+    "CITY APARTMENTS (TOWER-C)",
+    "CITY APARTMENTS (TOWER-D)",
+    "CITY APARTMENTS (TOWER-E)",
+    "CITY APARTMENTS (TOWER-F)",
+    "CITY APARTMENTS (TOWER-G)",
+    "CITY APARTMENTS (TOWER-J)",
+    "CITY APARTMENTS (TOWER-K)",
+    "Duhai (KN PART)",
+    "DUHAI VILLAGE -22",
+    "Gagan Enclave",
+    "Garhi Meerut Road",
+    "Morta",
+    "Guldhar-3 Free Hold (Free-Hold)",
+    "Hapur Bye Pass",
+    "Industrial Area Duhai",
+    "KIA",
+    "LANDCRAFT DEVELOPER",
+    "MAHAGUN PURAM-GANGA",
+    "MAHAGUN PURAM-GODAWARI",
+    "MAHAGUN PURAM-NARMADA",
+    "MAHAGUN PURAM-VIDHI",
+    "MAHAGUN PURAM-VINAYAK",
+    "MAHAROULI",
+    "MORTA",
+    "S.S.G.T.R.",
+    "SKARDI GREEN",
+    "SKARDI GREENS TOWER-1D",
+    "SKARDI GREENS TOWER-2D",
+    "Urvashi enclave"
+   ],
+   "17": [
+    "Karehera",
+    "Loni road Industrial Area",
+    "Rajeev Colony Mohan Nagar"
+   ],
+   "19": [
+    "Balmiki Kunj",
+    "Bonjha-B",
+    "Bonjha-C",
+    "Ghukna",
+    "Mukand Nagar-A",
+    "Mukand Nagar-B",
+    "Patel Marg",
+    "Patel Nagar-II A Block",
+    "Patel Nagar-II B Block",
+    "Patel Nagar-II D Block",
+    "Patel Nagar-II E Block",
+    "Patel Nagar-III F Block",
+    "Patel Nagar-III G Block",
+    "Patel Nagar-III H Block",
+    "Patel Nagar-III J-1 Block",
+    "Patel Nagar-III K Block",
+    "Ravidas Colony",
+    "Udal Nagar"
+   ],
+   "22": [
+    "Duhai-B.",
+    "Guldhar 2 Freehold",
+    "Guldhar 2 Freehold",
+    "Guldhar-3 Free Hold (Free-Hold)",
+    "Industrial Area Duhai"
+   ],
+   "31": [
+    "Garima garden"
+   ],
+   "32": [
+    "Harvansh Nagar",
+    "Krishna Nagar",
+    "Mamraj Nagar",
+    "Master Colony"
+   ],
+   "33": [
+    "Sanjay Nagar M - Block"
+   ],
+   "39": [
+    "Anand Vihar",
+    "Chajju Quarter",
+    "Kamla Quarter",
+    "NasirPur",
+    "Nehru Nagar-II C Block",
+    "Nehru Nagar-II F Block",
+    "Nehru Nagar-III F Bock",
+    "Nehru Nagar-III G Block",
+    "Nehru Nagar-III J Block",
+    "Nehru Nagar-III K Block",
+    "Rakesh Marg"
+   ],
+   "46": [
+    "Garima garden"
+   ],
+   "49": [
+    "Abhay Khand",
+    "Ahinsha Khand",
+    "Gyan Khand",
+    "Niti Khand",
+    "Shakti Khand"
+   ],
+   "50": [
+    "Banwari Nagar",
+    "Krishna Nagar",
+    "Morta",
+    "Noor Nagar",
+    "Prem Enclave",
+    "Raj Nagar Extension",
+    "Richpal Puri",
+    "Saddiq Nagar",
+    "Saraswati Vihar",
+    "Sewa Nagar",
+    "Sibbanpura",
+    "Subhash Nagar",
+    "Utranchal Nagar",
+    "Vikas Nagar"
+   ],
+   "52": [
+    "Arya Nagar",
+    "Dayanand Nagar",
+    "Kot Gaon",
+    "Modal Town Paschimi",
+    "Modal Town Purvi",
+    "New Panchwati Extension",
+    "Rama Krishna Colony",
+    "Shyam Vihar"
+   ],
+   "59": [
+    "Guldhar Gaon",
+    "Sanjay Nagar B - Block",
+    "Sanjay Nagar B - Block HIG",
+    "Sanjay Nagar E - Block",
+    "Sanjay Nagar F - Block",
+    "Sanjay Nagar L - Block"
+   ],
+   "61": [
+    "Sec-1",
+    "Sec-10",
+    "Sec-11",
+    "Sec-15",
+    "Sec-2",
+    "Sec-3",
+    "Sec-4",
+    "Sec-6",
+    "Sec-8",
+    "Sec-9",
+    "Shakti Khand",
+    "Vasundhra Sec-2A Bombey Yogna"
+   ],
+   "62": [
+    "AKSHAY ENCLAVE WARD 35",
+    "Durga Enclave",
+    "Ganesh Vatika",
+    "Government Building",
+    "Govind Vihar",
+    "GOVIND VIHAR 2 GOVINDPURAM",
+    "Govind Vihar II",
+    "Govindpuram A - Block",
+    "Govindpuram B - Block",
+    "Govindpuram C - Block",
+    "Govindpuram D - Block",
+    "Govindpuram G - Block",
+    "Govindpuram H - Block",
+    "Govindpuram I - Block",
+    "Govindpuram J - Block",
+    "Harsaav Enclave",
+    "Harsaav Gaon",
+    "Harsaav Mandeya",
+    "Karpoori Puram",
+    "Krishna Garden ( Freehold Govindpuram)",
+    "Lal Kuan",
+    "M S BLISS HOMES TOWER A",
+    "M S BLISS HOMES TOWER B",
+    "NEW SATABDI PURAM",
+    "Om Shanti Puram",
+    "R K PURAM",
+    "R.K. Puram A - Block (Govindpuram)",
+    "R.K. Puram B - Block (Govindpuram)",
+    "R.K. Puram C - Block (Govindpuram)",
+    "R.K. Puram D - Block (Govindpuram)",
+    "Rambagh Colony",
+    "RK PURAM 2",
+    "Satabdipuram",
+    "Sudha Sarovar",
+    "Swarn Jayanti Puram"
+   ],
+   "69": [
+    "Shalimar garden Extn."
+   ],
+   "88": [
+    "Arjun Nagar",
+    "Dayanand Nagar",
+    "Dharampura",
+    "Gandhi Nagar",
+    "Modal Town Purvi",
+    "Nehru Nagar-III N Block",
+    "Turab Nagar"
+   ],
+   "92": [
+    "Chaman Colony",
+    "Chota Kaila",
+    "Dwarkapuri",
+    "Islaam Nagar",
+    "Naya Bus Adda"
+   ],
+   "93": [
+    "Chota Kaila",
+    "Kaila Bhatta"
+   ],
+   "95": [
+    "Bhatta Jaat",
+    "Jassipura",
+    "Prem Nagar",
+    "Sadik Ki Puliya"
+   ],
+   "96": [
+    "Ashok Nagar",
+    "KalluPura-B",
+    "Modal Town Purvi",
+    "Nehru Nagar- III J Block",
+    "Nehru Nagar-II A Block",
+    "Nehru Nagar-II B Block",
+    "Nehru Nagar-II C Block",
+    "Nehru Nagar-II E Block",
+    "Nehru Nagar-II F Block",
+    "Nehru Nagar-III A Block",
+    "Nehru Nagar-III B Block",
+    "Nehru Nagar-III C Block",
+    "Nehru Nagar-III D Block",
+    "Nehru Nagar-III E Block",
+    "Nehru Nagar-III F Block",
+    "Nehru Nagar-III H Block",
+    "Nehru Nagar-III J Block",
+    "Nehru Nagar-III K Block",
+    "Nehru Nagar-III L Block",
+    "Nehru Nagar-III M Block",
+    "Nehru Nagar-III N Block",
+    "Ram Nagar"
+   ],
+   "18": [
+    "Vijay Nagar Sec 9 Block L"
+   ],
+   "21": [
+    "Bhowpur Village",
+    "Gyan Khand",
+    "Kaushambi"
+   ],
+   "24": [
+    "Pasonda"
+   ],
+   "30": [
+    "A BLOCK KRISHAN GARDEN GOVIND PURAM 2",
+    "Ajay Vihar",
+    "AKSHAY ENCLAVE WARD 35",
+    "B BLOCK KAILASH PURAM PHASE 2 GOVINDPURAM 2",
+    "BALAJI ENCLAVE",
+    "BALAJI ENCLAVE GOVIND PURAM",
+    "Durga Enclave",
+    "Ganesh Vatika",
+    "Gangapuram",
+    "Gaur Homes A1 - Block (Govindpuram)",
+    "Gaur Homes A2 - Block (Govindpuram)",
+    "Gaur Homes B - Block (Govindpuram)",
+    "Gaur Homes C - Block (Govindpuram)",
+    "Gaur Homes D - Block (Govindpuram)",
+    "Gaur Homes E - Block (Govindpuram)",
+    "Gaur Homes F1 - Block (Govindpuram)",
+    "Gaur Homes F2 - Block (Govindpuram)",
+    "Government Building",
+    "Govind Vihar",
+    "GOVIND VIHAR 2 GOVINDPURAM",
+    "Govind Vihar II",
+    "Govindpuram A - Block",
+    "Govindpuram D - Block",
+    "Govindpuram E - Block",
+    "Govindpuram G - Block",
+    "Govindpuram I - Block",
+    "Harsaav Enclave",
+    "INDRA ENCLAVE GOVIND PURAM 35",
+    "Kailash Puram",
+    "KAILASH PURAM GOVIND PURAM 2",
+    "Karpoori Puram",
+    "Kasturi Kunj",
+    "Keshav Kunj",
+    "Krishna Garden ( Freehold Govindpuram)",
+    "KRISHNA KUNJ",
+    "Meghraj Enclave",
+    "Om Shanti Puram",
+    "R.K. Puram A - Block (Govindpuram)",
+    "R.K. Puram B - Block (Govindpuram)",
+    "R.K. Puram C - Block (Govindpuram)",
+    "RADHA GARDEN",
+    "Radha Krishna Kunj",
+    "Rahis Pur",
+    "Rambagh Colony",
+    "RATAN ENCLAVE WARD 35",
+    "Sanyog Nagar",
+    "Satabdipuram",
+    "Shivam Puram",
+    "Sudha Sarovar",
+    "Swarn Jayanti Puram"
+   ],
+   "34": [
+    "Sec-1"
+   ],
+   "35": [
+    "Akber Pur Bahrampur",
+    "Akber Pur Bahrampur A",
+    "Akber Pur Bahrampur B",
+    "Budh Vihar"
+   ],
+   "38": [
+    "Aanand Industrial State",
+    "Aanand Industries State",
+    "Arthala",
+    "Government Assets",
+    "Katori Mill Mohan Nagar",
+    "Shalimar garden Extn."
+   ],
+   "42": [
+    "(LAND CRAFT) GOLF LINK TOWER 1B",
+    "(LAND CRAFT) GOLF LINK TOWER 2A",
+    "(LAND CRAFT) GOLF LINK TOWER 2B",
+    "(LAND CRAFT) GOLF LINK TOWER 3B",
+    "A- BLOCK BAMHETA",
+    "ADITYA WORLD CITY",
+    "ADITYA WORLD CITY",
+    "URBAN HOME-A BLOCK",
+    "ADITYA WORLD CITY",
+    "URBAN HOME-B BLOCK",
+    "ADITYA WORLD CITY",
+    "URBAN HOME-C BLOCK",
+    "ADITYA WORLD CITY",
+    "URBAN HOME-D BLOCK",
+    "ADITYA WORLD CITY",
+    "URBAN HOME-E BLOCK",
+    "ADITYA WORLD CITY",
+    "URBAN HOME-F BLOCK",
+    "ADITYA WORLD CITY",
+    "URBAN HOME-G BLOCK",
+    "ADITYA WORLD CITY",
+    "URBAN HOME-H BLOCK",
+    "ADITYA WORLD CITY",
+    "URBAN HOME-K BLOCK",
+    "ADITYA WORLD CITY",
+    "URBAN HOME-M BLOCK",
+    "ADITYA WORLD CITY",
+    "URBAN HOME-N BLOCK",
+    "Avantika",
+    "B- BLOCK BAMHETA",
+    "B- BLOCK KRISHNA VIHAR",
+    "C- BLOCK BAMHETA",
+    "CITY APARTMENTS (TOWER-A)",
+    "CITY APARTMENTS (TOWER-B)",
+    "CITY APARTMENTS (TOWER-C)",
+    "CITY APARTMENTS (TOWER-D)",
+    "CITY APARTMENTS (TOWER-E)",
+    "CITY APARTMENTS (TOWER-F)",
+    "CITY APARTMENTS (TOWER-G)",
+    "CITY APARTMENTS (TOWER-H)",
+    "CITY APARTMENTS (TOWER-J)",
+    "CITY APARTMENTS (TOWER-K)",
+    "CITY APARTMENTS (TOWER-N)",
+    "CITY APARTMENTS (TOWER-P)",
+    "D- BLOCK BAMHETA",
+    "DILWALEYA COLONY- BA",
+    "Government Building",
+    "Govindpuram A - Block",
+    "Govindpuram B - Block",
+    "Govindpuram C - Block",
+    "Govindpuram D - Block",
+    "Govindpuram H - Block",
+    "Govindpuram I - Block",
+    "Govindpuram J - Block",
+    "Harsaav Enclave",
+    "Harsaav Gaon",
+    "Harsaav Mandeya",
+    "JAIN VIHAR COLONY",
+    "JAIPURIA SUNRISE GREENS A BLOCK",
+    "JAIPURIA SUNRISE GREENS E BLOCK",
+    "JAIPURIA SUNRISE GREENS G BLOCK",
+    "JOVIAN LUXURY HOMES",
+    "Kishan Vihar Colony",
+    "Krishan Vihar Shahpur Bamheta",
+    "KRISHNA BIHAR COLONY",
+    "KRISHNA BIHAR MAAN SAROVER PARK",
+    "KRISHNA KUNJ",
+    "Lal Kuan",
+    "LANDCRAFT DEVELOPER",
+    "LAXMI VIHAR COLONY",
+    "LUXURIA ESTATE (ADITYA WORLD CITY)",
+    "MAAN SAROVER PARK",
+    "MAAN SAROVER PARK-II",
+    "MAAN SAROVER PARK-III",
+    "MAHAGUN PURAM-GODAWARI",
+    "MAHAROULI",
+    "Pandav Nagar",
+    "PARK TOWN COMMERCIAL COMPLEX SHAHPUR BAMHETA",
+    "Radha Krishna Kunj",
+    "RADHA KUNJ RAJ COMPAUND",
+    "RADHA KUNJ SAHAPUR BAMHETA",
+    "RAJ COMPOUND",
+    "RED LIGHT BAMHETA",
+    "SAMTAL VIHAR",
+    "SHAHPUR BAMHETA",
+    "SHANKAR VIHAR-3",
+    "SHAYAM ENCLAVE SAHAPUR BAMHETA",
+    "SHREE RAM ENCLAVE",
+    "Surya Enclave",
+    "URBAN HOMES",
+    "URBAN HOMES (Aditya world city)"
+   ],
+   "47": [
+    "BALAJI ENCLAVE GOVIND PURAM",
+    "Duhai-B.",
+    "Government Building",
+    "Govindpuram C - Block",
+    "Guldhar 2 Freehold",
+    "Guldhar Gaon",
+    "M.P. Nagar",
+    "Mahendra Enclave A - Block",
+    "Mahendra Enclave B - Block",
+    "Mahendra Enclave C - Block",
+    "Mahendra Enclave D - Block",
+    "Mahendra Enclave E-Block",
+    "MAHENDRA ENCLAVE F- BLOCK",
+    "MAHENDRA ENCLAVE G - BLOCK",
+    "MAHENDRA ENCLAVE H - BLOCK",
+    "MAHENDRA ENCLAVE I - BLOCK",
+    "MAHENDRA ENCLAVE J - BLOCK",
+    "MAHENDRA ENCLAVE K - BLOCK",
+    "MAHENDRA ENCLAVE M - BLOCK",
+    "MAHENDRA ENCLAVE Z - BLOCK",
+    "R K PURAM",
+    "Shastri Nagar A - Block",
+    "Shastri Nagar B - Block",
+    "Shastri Nagar C - Block",
+    "Shastri Nagar D - Block",
+    "Shastri Nagar E - Block",
+    "Shastri Nagar F - Block",
+    "Shastri Nagar G - Block",
+    "Shastri Nagar H - Block",
+    "Shastri Nagar M - Block",
+    "SHREE RAM ENCLAVE",
+    "Shree Ram Vihar &amp; Bank Enclave"
+   ],
+   "53": [
+    "A BLOCK RAHISPURA VILLAGE",
+    "B BLOCK RAHISPUR VILLAGE",
+    "Government Building",
+    "Rahis Pur",
+    "Raj Nagar Sec - 3",
+    "Raj Nagar Sec - 7",
+    "Raj Nagar Sec - 9",
+    "Sanjay Nagar L - Block",
+    "Sanjay Nagar M - Block"
+   ],
+   "56": [
+    "ANSAL CHIRANJEEV PLAZA-I",
+    "CHIRANJEEV VIHAR",
+    "ANSAL CHIRANJEEV PLAZA-II",
+    "CHIRANJEEV VIHAR",
+    "ANSHAL HOUSING",
+    "Avantika",
+    "AVANTIKA II",
+    "Chiranjeev Home",
+    "Chiranjeev Vihar Sec - 1",
+    "Chiranjeev Vihar Sec - 2",
+    "Chiranjeev Vihar Sec - 3",
+    "Chiranjeev Vihar Sec - 4",
+    "Chiranjeev Vihar Sec - 5",
+    "Chiranjeev Vihar Sec - 6",
+    "Chiranjeev Vihar Sec - 7",
+    "Chiranjeev Vihar Sec - 8",
+    "Chiranjeev Vihar Sec - 9",
+    "Chiranjeev Vihar Sec- 10",
+    "Chiranjeev Vihar Sec- 10A",
+    "Chiranjeev Vihar Sec- 8 Freehold",
+    "Dhanvantripuram",
+    "Gangapuram",
+    "Government Building",
+    "Guldhar 2 Freehold",
+    "M.P. Nagar",
+    "Mahendra Enclave A - Block",
+    "Mahendra Enclave B - Block",
+    "Mahendra Enclave D - Block",
+    "MAHENDRA ENCLAVE F- BLOCK",
+    "MAHENDRA ENCLAVE J - BLOCK",
+    "MAHENDRA ENCLAVE M - BLOCK",
+    "MAHENDRA ENCLAVE W - BLOCK",
+    "MAHENDRA ENCLAVE Z - BLOCK",
+    "PANCHSHEEL PRIME 390",
+    "TOWER-B1",
+    "PANCHSHEEL PRIME 390",
+    "TOWER-B14",
+    "PANCHSHEEL PRIME 390",
+    "TOWER-B15",
+    "PANCHSHEEL PRIME 390",
+    "TOWER-B16",
+    "PANCHSHEEL PRIME 390",
+    "TOWER-B17",
+    "PANCHSHEEL PRIME 390",
+    "TOWER-B18",
+    "PANCHSHEEL PRIME 390",
+    "TOWER-B19",
+    "PANCHSHEEL PRIME 390",
+    "TOWER-B2",
+    "PANCHSHEEL PRIME 390",
+    "TOWER-B20",
+    "PANCHSHEEL PRIME 390",
+    "TOWER-B21",
+    "PANCHSHEEL PRIME 390",
+    "TOWER-B26",
+    "PANCHSHEEL PRIME 390",
+    "TOWER-B27",
+    "PANCHSHEEL PRIME 390",
+    "TOWER-B28",
+    "PANCHSHEEL PRIME 390",
+    "TOWER-B3",
+    "PANCHSHEEL PRIME 390",
+    "TOWER-B4",
+    "PANCHSHEEL PRIME 390",
+    "TOWER-B5",
+    "Panchsheel Tower -1",
+    "Panchsheel Tower -2",
+    "Panchsheel Tower -3",
+    "Panchsheel Tower -4",
+    "Panchsheel Tower -5",
+    "Panchsheel Tower -6",
+    "Panchsheel Tower -7",
+    "Panchsheel Tower -8",
+    "Panchsheel Tower -9",
+    "PANCHSHEEL TOWER-10",
+    "PANCHSHEEL TOWER-11",
+    "Pratap Nagar (Police Line)",
+    "SAHKARI NAGAR",
+    "Shastri Nagar H - Block",
+    "Shastri Nagar I - Block",
+    "Shastri Nagar J - Block",
+    "Shree Ram Vihar &amp; Bank Enclave",
+    "Vishnu Enclave"
+   ],
+   "64": [
+    "Ganeshpuri",
+    "Garima garden",
+    "Girdhar Enclave",
+    "Janak puri",
+    "Pasonda",
+    "Sahibabad South Border"
+   ],
+   "65": [
+    "BSR /Loha Mandi",
+    "Flat on GDA Shops (Vivekanand Nagar)",
+    "Government Building",
+    "Jeevan Vihar A - Block",
+    "Jeevan Vihar B - Block",
+    "Jeevan Vihar C - Block",
+    "Kavinagar D - Block",
+    "Kavinagar G - Block",
+    "Kavinagar H - Block",
+    "Kavinagar I - Block",
+    "Kavinagar L - Block",
+    "Kavinagar M - Block",
+    "KIA",
+    "Lal Kuan",
+    "Sanjay Nagar C - Block",
+    "Sanjay Nagar D - Block",
+    "Sanjay Nagar J - Block",
+    "Sanjay Nagar K - Block",
+    "Sanjay Nagar P - Block",
+    "Vivekanand Nagar",
+    "Vivekanand Nagar (Kyosk)",
+    "Vivekanand Nagar (Shops)"
+   ],
+   "67": [
+    "Government Building",
+    "Rahis Pur",
+    "Raj Nagar Sec - 7",
+    "Raj Nagar Sec - 7 Quarter",
+    "Raj Nagar Sec - 8",
+    "Raj Nagar Sec - 8 Appt.",
+    "Sanjay Nagar C - Block",
+    "Sanjay Nagar D - Block",
+    "Sanjay Nagar J - Block",
+    "Sanjay Nagar K - Block",
+    "Sanjay Nagar P - Block",
+    "Vivekanand Nagar"
+   ],
+   "68": [
+    "Brij Vihar"
+   ],
+   "71": [
+    "Government Building",
+    "Kavinagar L - Block",
+    "MAHAGUN PURAM-KAVERI",
+    "Sanjay Nagar A - Block",
+    "Sanjay Nagar A - Block HIG",
+    "Sanjay Nagar B - Block",
+    "Sanjay Nagar B - Block HIG",
+    "Sanjay Nagar E - Block",
+    "Sanjay Nagar F - Block",
+    "Sanjay Nagar F - Block Duplex",
+    "Sanjay Nagar G - Block",
+    "Sanjay Nagar H - Block",
+    "Sanjay Nagar J - Block",
+    "Sanjay Nagar M - Block",
+    "Sanjay Nagar N - Block",
+    "Sanjay Nagar P - Block"
+   ],
+   "79": [
+    "Abhay Khand",
+    "Gyan Khand",
+    "Gyan Khand-1",
+    "Makanpur Vistar Coloney",
+    "Niti Khand",
+    "Nyay Khand",
+    "Sec-1",
+    "Sec-4 Vaishali",
+    "Sec-6 Vaishali"
+   ],
+   "84": [
+    "ANSAL SUNDHRAM",
+    "Devika Tower",
+    "Durga Tower",
+    "Government Building",
+    "Hint",
+    "Jaina Tower",
+    "Kavinagar M - Block",
+    "Konark Plaza",
+    "R - 11/179 Raj Nagar",
+    "R.D.C.",
+    "R.D.C. Commercial (Rajnagar)",
+    "Raj Nagar Sec - 1",
+    "Raj Nagar Sec - 10",
+    "Raj Nagar Sec - 10 Quarter",
+    "Raj Nagar Sec - 10/49",
+    "Raj Nagar Sec - 11",
+    "Raj Nagar Sec - 12",
+    "Raj Nagar Sec - 13",
+    "Raj Nagar Sec - 13 Appt.",
+    "Raj Nagar Sec - 14",
+    "Raj Nagar Sec - 15",
+    "Raj Nagar Sec - 2",
+    "Raj Nagar Sec - 2 Appt.",
+    "Raj Nagar Sec - 3",
+    "Raj Nagar Sec - 4",
+    "Raj Nagar Sec - 5",
+    "Raj Nagar Sec - 6",
+    "Raj Nagar Sec - 6/1 Appt.",
+    "Raj Nagar Sec - 7",
+    "Raj Nagar Sec - 8",
+    "Raj Nagar Sec - 9",
+    "Raj Nagar Sec - 9 Appt.",
+    "Rajkunj",
+    "RDC-B",
+    "RDC-C",
+    "RDC-D",
+    "Sanjay Nagar E - Block",
+    "Satyam Complex",
+    "Sumedha"
+   ],
+   "91": [
+    "Government Building",
+    "Kavinagar Flat",
+    "Kavinagar Quarter",
+    "Kavinagar A - Block",
+    "Kavinagar B - Block",
+    "Kavinagar C - Block",
+    "Kavinagar C - Block Quarter",
+    "Kavinagar D - Block",
+    "Kavinagar E - Block",
+    "Kavinagar F - Block",
+    "Kavinagar F - Block Quarter",
+    "Kavinagar G - Block",
+    "Kavinagar H - Block",
+    "Kavinagar I - Block",
+    "Kavinagar J - Block",
+    "Kavinagar K - Block",
+    "Kavinagar L - Block",
+    "Kavinagar M - Block",
+    "Kavinagar M - Block Flat",
+    "LAXMI VIHAR COLONY"
+   ],
+   "94": [
+    "BEL Coloney Rampuri",
+    "Chander Nagar",
+    "Ramprastha",
+    "Rampure",
+    "Surya Nagar"
+   ],
+   "5": [
+    "Gagan vihar",
+    "Tulsi Niketan"
+   ],
+   "10": [
+    "D.L.F.",
+    "Gagan vihar",
+    "Government Assets",
+    "Loni road Industrial Area",
+    "Sec - 3 Rajendra Nagar",
+    "Sec-2 Rajendra Nagar",
+    "Shalimar garden Extn.",
+    "Shalimar Garden Main"
+   ],
+   "14": [
+    "Govt.",
+    "Pratap Vihar Sec 12 Block M",
+    "Pratap Vihar Sec 12 Block P",
+    "Railway Colony - R - Block",
+    "Sarvoday Nagar",
+    "Vakeel Colony - R - Block",
+    "Vijay Nagar Sec 12 Block L",
+    "Vijay Nagar Sec 9 Block A",
+    "B",
+    "Vijay Nagar Sec 9 Block C",
+    "Vijay Nagar Sec 9 Block E",
+    "Vijay Nagar Sec 9 Block G"
+   ],
+   "20": [
+    "Anand dham Appartmetn Bhopura",
+    "Gagan vihar",
+    "Rajeeev Nagar Bhopura",
+    "Tulsi Niketan"
+   ],
+   "25": [
+    "Ambedkar Nagar",
+    "Industrial Area",
+    "Industrial Area A - Block",
+    "Industrial Area C - Block",
+    "Industrial Area E - Block",
+    "Industrial Area F - Block",
+    "Industrial Area G - Block",
+    "Industrial Area H - Block",
+    "Industrial Area S - Block",
+    "Shankar Puri",
+    "Vijay Nagar Sec 9 Block C",
+    "Vijay Nagar Sec 9 Block D",
+    "Vijay Nagar Sec 9 Block F",
+    "Vijay Nagar Sec 9 Block L"
+   ],
+   "28": [
+    "Arthala",
+    "Government Assets",
+    "Harsha Compound Loni road",
+    "Karehera",
+    "Lajpat Nagar",
+    "Loni road Industrial Area",
+    "Police Department Assets",
+    "Rajeeev Nagar Bhopura",
+    "Rajeev Colony Mohan Nagar"
+   ],
+   "29": [
+    "Sec-1",
+    "Sec-10",
+    "Sec-13",
+    "Sec-15",
+    "Sec-16",
+    "Sec-18",
+    "Sec-2",
+    "Sec-3",
+    "Sec-4",
+    "Sec-5",
+    "Sec-9"
+   ],
+   "37": [
+    "D.L.F.",
+    "Pasonda",
+    "Police Department Assets",
+    "Sanjay Colony",
+    "Shalimar garden Extn.",
+    "Shalimar Garden Main"
+   ],
+   "40": [
+    "Jhandapur",
+    "Peer Coloney Jhandapur",
+    "Sahibabad",
+    "Sahibabad Industrial Area(Site-4)"
+   ],
+   "44": [
+    "Arthala",
+    "Police Department Assets",
+    "Sanjay Colony"
+   ],
+   "45": [
+    "Vijay Nagar Sec 11 Block A"
+   ],
+   "48": [
+    "Govt.",
+    "Mirzapur",
+    "Pratap Vihar Sec 12 Block E",
+    "Pratap Vihar Sec 12 Block F",
+    "Pratap Vihar Sec 12 Block H",
+    "Pratap Vihar Sec 12 Block J",
+    "Pratap Vihar Sec 12 Block N",
+    "Pratap Vihar Sec-12",
+    "Block- G",
+    "Veer Abdul Hamid Colony",
+    "Veer Abdul Hamid Colony A",
+    "Vijay Nagar Sec 12 Block K"
+   ],
+   "60": [
+    "Apsara Compound",
+    "D.L.F.",
+    "Girdhar Enclave",
+    "Government Assets",
+    "Government Assets - South Sahibabad",
+    "Indira Garden",
+    "J. P. Enclave Commercial",
+    "J.P. Enclave Parsvnath",
+    "Jai Bharat Enclave",
+    "Naveen Park",
+    "Police Department Assets",
+    "Rajendra Nagar Indus. Area",
+    "Saheed Pyarelal Colony (Border)",
+    "Sahibabad South Border",
+    "Satyam Enclave",
+    "Sec - 3 Rajendra Nagar",
+    "Shiv shakti vihar",
+    "Shyam Enclave",
+    "Shyam park Extn.",
+    "Shyam park main"
+   ],
+   "63": [
+    "Dhanpat Colony",
+    "Garima garden",
+    "Pasonda",
+    "Raghuveer Enclave",
+    "Rajeeev Nagar Bhopura",
+    "Shree Ram Colony",
+    "Shyam Enclave",
+    "Sirohi Enclave",
+    "Vrindavan garden"
+   ],
+   "66": [
+    "Pasonda"
+   ],
+   "70": [
+    "Dhanpat Colony",
+    "Government Assets",
+    "Iqbal Market",
+    "Janak puri",
+    "North Sahibabad",
+    "Radhey Shyampark",
+    "Rajbagh Colony",
+    "Saheed nagar",
+    "Shalimar garden Extn.",
+    "Shiva Compound",
+    "Shree Ram Colony",
+    "Shyam Enclave",
+    "Sirohi Enclave",
+    "Vrindavan garden"
+   ],
+   "72": [
+    "Ahinsha Khand",
+    "Kadkad Model",
+    "Kaushambi",
+    "Sec-1",
+    "Sec-1 Vaishali",
+    "Sec-1 Vaishali Kamna",
+    "Sec-5 Vaishali"
+   ],
+   "73": [
+    "Ashok Vatika APPT. Lajpat nagar",
+    "G.D.A. Appt. (Lajpat Nagar) - H Block",
+    "Ganeshpuri",
+    "Hansh Apartment",
+    "Police Department Assets",
+    "Pooja Apartment",
+    "Shalimar garden Extn.",
+    "Shyam park Extn."
+   ],
+   "75": [
+    "Ashok Vatika APPT. Lajpat nagar",
+    "Government Assets",
+    "Lajpat Nagar",
+    "Om Nagar",
+    "Rajbagh Colony",
+    "Rajendra Nagar Sec-5",
+    "Saheed pyarelal colony (Lajpat nagar)",
+    "Sec-2 Rajendra Nagar",
+    "Sec-5 Rajendra Nagar",
+    "Swaroop Park"
+   ],
+   "78": [
+    "Ganeshpuri",
+    "Lajpat Nagar",
+    "Saheed nagar",
+    "Shalimar garden Extn."
+   ],
+   "80": [
+    "Ganeshpuri",
+    "Government Assets - Rajendra Nagar Sec - 2",
+    "Plot - 7/ Sec-2 Rajendra Nagar",
+    "Radhey Shyampark",
+    "Rajbagh Colony",
+    "Rajendra Nagar - II",
+    "Rajendra Nagar Sec-5",
+    "Sec - 3 Rajendra Nagar",
+    "Sec-2 Rajendra Nagar",
+    "Shalimar garden Extn."
+   ],
+   "82": [
+    "Jawahar Park",
+    "Saheed nagar",
+    "Sec-2 Rajendra Nagar"
+   ],
+   "83": [
+    "Dhanpat Colony",
+    "Government Assets",
+    "Naveen Park",
+    "Panchsheel Park",
+    "Police Department Assets",
+    "Sec - 3 Rajendra Nagar",
+    "Sec-2 Rajendra Nagar",
+    "Shalimar garden Extn.",
+    "Shyam Enclave",
+    "Shyam park Extn."
+   ],
+   "85": [
+    "Ashok Vatika APPT. Lajpat nagar",
+    "G.D.A. Appt. (Lajpat Nagar) - H Block",
+    "Government Assets",
+    "Jawahar Park",
+    "Lajpat Nagar",
+    "Om Nagar",
+    "Police Department Assets",
+    "Pooja Apartment",
+    "Saheed pyarelal colony (Lajpat nagar)",
+    "Shiv shakti vihar",
+    "Swaroop Park"
+   ],
+   "86": [
+    "Government Assets",
+    "Jawahar Park",
+    "Naveen Park",
+    "Panchsheel Park",
+    "Police Department Assets",
+    "Radhey Shyampark",
+    "Rajbagh Colony",
+    "Rajendra Nagar Sec-5",
+    "Sec - 3 Rajendra Nagar",
+    "Sec-2 Rajendra Nagar",
+    "Sec-5 Rajendra Nagar",
+    "Shalimar garden Extn.",
+    "Sirohi Enclave"
+   ],
+   "90": [
+    "Saheed nagar",
+    "Vrindavan garden"
+   ],
+   "36": [
+    "Comercial",
+    "Prahalad Village",
+    "Ramprastha",
+    "Sahibabad Industrial Area(Site-4)",
+    "Sec-10",
+    "Sec-12",
+    "Sec-12",
+    "Sec-14",
+    "Sec-15",
+    "Sec-16",
+    "Sec-18",
+    "Sec-6 Vaishali",
+    "Sec-9",
+    "Sec-9 Vaishali"
+   ],
+   "41": [
+    "Jhandapur",
+    "Kaushambi",
+    "Maharajjpur",
+    "Sahibabad",
+    "Sahibabad Industrial Area(Site-4)"
+   ],
+   "43": [
+    "Kadkad Model",
+    "Sahibabad Industrial Area(Site-4)"
+   ],
+   "54": [
+    "Nyay Khand",
+    "Sec-1",
+    "Sec-1 Vaishali",
+    "Sec-10",
+    "Sec-11",
+    "Sec-12",
+    "Sec-13",
+    "Sec-15",
+    "Sec-2",
+    "Sec-3",
+    "Sec-5",
+    "Sec-5 Vaishali",
+    "Sec-6",
+    "Sec-9"
+   ],
+   "57": [
+    "Ahinsha Khand",
+    "Amarpali Village Society",
+    "Makanpur",
+    "Niti Khand",
+    "Nyay Khand",
+    "Sec-2 Vaishali",
+    "Sec-6 Vaishali"
+   ],
+   "58": [
+    "Shivpuri",
+    "Vijay Nagar Sec 9 Block A",
+    "Vijay Nagar Sec 9 Block A",
+    "B",
+    "Vijay Nagar Sec 9 Block E"
+   ],
+   "74": [
+    "Comercial",
+    "Sec-11",
+    "Sec-13",
+    "Sec-15",
+    "Sec-17",
+    "Sec-18",
+    "Sec-19",
+    "Sec-3 Vaishali",
+    "Sec-4 Vaishali",
+    "Sec-6",
+    "Sec-6 Vaishali",
+    "Sec-9 Vaishali"
+   ],
+   "76": [
+    "Comercial",
+    "Sec-1",
+    "Sec-1 Vaishali",
+    "Sec-2",
+    "Sec-2 Vaishali",
+    "Sec-3",
+    "Sec-3 Vaishali",
+    "Sec-4 Vaishali"
+   ],
+   "77": [
+    "Ahinsha Khand",
+    "Comercial",
+    "Sec-1 Vaishali",
+    "Sec-2 Vaishali",
+    "Sec-3",
+    "Sec-3 Vaishali",
+    "Sec-3F Vaishali",
+    "Sec-4",
+    "Sec-4 Vaishali",
+    "Sec-5 Vaishali",
+    "Sec-7 Vaishali"
+   ],
+   "81": [
+    "Ahinsha Khand",
+    "Gyan Khand",
+    "Niti Khand",
+    "Nyay Khand",
+    "Sec-5 Vaishali",
+    "Shakti Khand",
+    "Vaibhav Khand"
+   ],
+   "87": [
+    "Abhay Khand",
+    "Ahinsha Khand",
+    "Gyan Khand",
+    "Nyay Khand",
+    "Sec-1 Vaishali",
+    "Sec-2 Vaishali",
+    "Sec-4 Vaishali",
+    "Sec-7 Vaishali"
+   ],
+   "89": [
+    "Comercial",
+    "Niti Khand",
+    "Nyay Khand",
+    "Ramprastha",
+    "Sec-1 Vaishali",
+    "Sec-4 Vaishali",
+    "Sec-5",
+    "Sec-5 Vaishali",
+    "Sec-5 Vaishali Kalpana",
+    "Sec-5 Vaishali Kamna",
+    "Sec-6 Vaishali",
+    "Sec-7",
+    "Sec-7 Vaishali",
+    "Sec-9 Vaishali",
+    "Shakti Khand"
+   ],
+   "97": [
+    "Chander Nagar",
+    "Ramprastha",
+    "Surya Nagar"
+   ],
+   "98": [
+    "Abhay Khand",
+    "Ahinsha Khand",
+    "Niti Khand",
+    "Nyay Khand",
+    "Sec-1 Vaishali",
+    "Sec-15",
+    "Sec-7 Vaishali",
+    "Vaibhav Khand"
+   ],
+   "99": [
+    "Ahinsha Khand",
+    "Vaibhav Khand",
+    "Vaibhav Khand"
+   ],
+   "100": [
+    "Ahinsha Khand",
+    "Shakti Khand",
+    "Vaibhav Khand"
+   ],
+   "1": [
+    "Adarsh Vihar Colony",
+    "Bheem Nagar",
+    "Krishna Nagar Bagu",
+    "Krishna Nagar Bagu A Block",
+    "Krishna Nagar Bagu B Block",
+    "Krishna Nagar Bagu C Block",
+    "Krishna Nagar Bagu D Block",
+    "Krishna Nagar Bagu E Block",
+    "Krishna Nagar Bagu F Block",
+    "Krishna Nagar Bagu G Block",
+    "Lathmar Colony Bagu",
+    "Maharana Vihar",
+    "SIDDHARTH VIHAR BAGU",
+    "Sudamapuri A Block"
+   ],
+   "2": [
+    "Adarsh Vihar Colony",
+    "Akber Pur Bahrampur",
+    "Bheem Nagar",
+    "Dundaheda",
+    "Krishna Nagar Bagu",
+    "Krishna Nagar Bagu A Block",
+    "Old Vijay Nagar Sec 9",
+    "Pragya Vihar",
+    "Raghunathpuri Extension",
+    "RAHUL VIHAR 1",
+    "SIDDHARTH VIHAR"
+   ],
+   "3": [
+    "Adarsh Vihar Colony",
+    "Krishna Nagar Bagu A Block",
+    "Old Vijay Nagar Sec 9",
+    "Sudamapuri A Block",
+    "Sudamapuri B Block",
+    "Sudamapuri C Block",
+    "Sudamapuri D Block",
+    "Vijay Nagar Sec 9 Block H",
+    "Vijay Nagar Sec 9 Block J",
+    "Vijay Nagar Sec 9 Block k"
+   ],
+   "4": [
+    "Govt.",
+    "Mata Colony",
+    "Pratap Vihar Sec 12 C Block",
+    "Roji Colony",
+    "Sangharsh Colony",
+    "Vijay Nagar Sec 12 Block A",
+    "Vijay Nagar Sec 12 Block B",
+    "Vijay Nagar Sec 12 Block D"
+   ],
+   "7": [
+    "Adarsh Vihar Colony",
+    "Ajanta Enclave",
+    "Akber Pur Bahrampur",
+    "Bheem Nagar",
+    "Biharipura",
+    "Dundaheda",
+    "Govt.",
+    "Indraj Colony",
+    "Khairati Nagar",
+    "Krishna Nagar Bagu",
+    "Krishna Nagar Bagu A Block",
+    "Krishna Vatika",
+    "Maharana Vihar",
+    "Nai Basti Bagu",
+    "Rani Lakshmi Bai Colony",
+    "Rishi Kashyap Colony",
+    "Sarvodaya Colony",
+    "Shiv Adarsh Colony",
+    "Shiv Vihar Colony",
+    "Sudamapuri A Block",
+    "Sudamapuri B Block",
+    "Sudamapuri C Block",
+    "Sudamapuri D Block"
+   ],
+   "15": [
+    "Bhavrav Devras",
+    "Bheem Nagar",
+    "Charan Singh Colony",
+    "Govt.",
+    "KA Block Sec-12",
+    "Madhopura",
+    "Pratap Vihar Sec 12 Block H",
+    "Pratap Vihar Sec 12 Block J",
+    "Pratap Vihar Sec 12 Block M",
+    "Pratap Vihar Sec 12 Block N",
+    "Pratap Vihar Sec 12 Block P",
+    "Pratap Vihar Sec-11 E Block",
+    "Pratap Vihar Sec-12",
+    "Block- G",
+    "RAHUL VIHAR 2",
+    "Railway Colony - R - Block",
+    "Sarvoday Nagar",
+    "Vakeel Colony - R - Block",
+    "Vijay Nagar Sec 12 Block K",
+    "Vijay Nagar Sec 12 Block L"
+   ],
+   "23": [
+    "Dundaheda",
+    "Dundaheda",
+    "Kaila Gaon",
+    "Kailash Nagar",
+    "Sain Vihar",
+    "Shanti Nagar"
+   ],
+   "26": [
+    "Bhood Bharat Nagar",
+    "Gaupuri",
+    "Madhopura",
+    "Sunderpuri"
+   ],
+   "27": [
+    "Crossing Republic",
+    "Dundaheda",
+    "Maharana Vihar",
+    "New Shanti Nagar",
+    "Sain Vihar",
+    "Shanti Nagar"
+   ],
+   "51": [
+    "Dundaheda",
+    "Govt.",
+    "Kricent Appartment",
+    "Krishna Vihar Appartment",
+    "Pratap Vihar Sec 12 Block E",
+    "Pratap Vihar Sec 12 Block F",
+    "Pratap Vihar Sec 12 Block H",
+    "Pratap Vihar Sec 12 Block J",
+    "Pratap Vihar Sec 12 Block N",
+    "Pratap Vihar Sec-11 D Block",
+    "Pratap Vihar Sec-11 E Block",
+    "Pratap Vihar Sec-11 F Block",
+    "Pratap Vihar Sec-11 G Block",
+    "Pratap Vihar Sec-12",
+    "Block- G",
+    "SIDDHART VIHAR",
+    "Vijay Nagar Sec 11 Block A",
+    "Vijay Nagar Sec 11 Block B",
+    "Vijay Nagar Sec 12 Block K"
+   ],
+   "55": [
+    "Akber Pur Bahrampur",
+    "Pratap Vihar Sec 12 Block J",
+    "Pratap Vihar Sec-11 D Block",
+    "Pratap Vihar Sec-11 E Block",
+    "Pratap Vihar Sec-11 F Block",
+    "Pratap Vihar Sec-11 G Block",
+    "Vijay Nagar Sec 11 Block A",
+    "Vijay Nagar Sec 11 Block B",
+    "Vijay Nagar Sec 11 Block C"
+   ]
+  }
+ }
+}
