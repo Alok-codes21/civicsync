@@ -26,6 +26,10 @@ Demo mode is OFF by default. Set `DEMO_MODE=true` only for sample accounts below
 
 These are public sample credentials, not secure production identities. Use `DEMO_MODE=false` to stop creating demo accounts/routes. This does NOT delete previously created demo accounts. Operator-only local provisioning is available through `scripts/provision-user.cjs`; real staff authority verification, password rotation/reset, secure hosting, backups, quotas and encryption are pending. A retention sweep deletes evidence and redacts title, description, landmark, coordinates, ward and latestUpdate on old resolved records after 90 days, and pseudonymizes the complaint author; it keeps accountability fields (category, priority, status history, officer) and does not purge old audit entries or backups. Do not put actual citizen evidence into a publicly reachable demo instance.
 
+Citizen self-signup is available with `POST /api/signup`, including when demo mode is off. Body: `{name, username, password, phone?}`. Name is trimmed (1-100 characters); username is trimmed/lowercased (3-60 letters, digits, `_` or `-`); password is 12-128 characters and hashed with asynchronous scrypt. Optional phone uses the same Indian mobile format check as `/api/me/phone` and stays unverified, with no OTP/SMS. New users are always citizens; attempts to request staff roles are rejected. Staff accounts still need operator provisioning or local demo seeds.
+
+Success is 201 with `{token, user: {username, name, role: "citizen"}}`, automatically signed in with the same 12-hour session policy as login. Phone supplied: `phoneSaved:true, phoneVerified:false` (the number itself is not echoed). Invalid fields return 400, duplicate usernames return 409, and attempt number six from one IP within 10 minutes returns 429 with `Retry-After`. Every attempt counts, including failures and successes. Signup rate limiting is in-memory, bounded to 1000 IPs, resets on restart and is not a production abuse-control service. Do not trust client-supplied forwarding headers; deploying behind a proxy needs deliberate proxy/rate-limit configuration. No phone-based login, account recovery or identity verification is provided.
+
 Existing login endpoints and 12-hour tokens remain. Login validates username/password type and length before hashing and verifies with asynchronous scrypt so bursts of attempts do not block the event loop; failed-attempt rate limiting is in-memory and bounded (prototype-grade, resets on restart). Bearer tokens are stored only as SHA-256 hashes, so a database copy cannot be replayed as a live session. Filing now REQUIRES a bearer token. The public acknowledgement lookup remains but returns ONLY status/category/priority/deadline/department/escalation and workflow-stage summaries. It omits names, exact location, title, description, landmark, notes, raw audit payloads and evidence. Owners, assigned officers, reviewers and supervisors receive authorized detail. Reviewers/supervisors are deliberately broad roles in this prototype.
 
 ## Core APIs
@@ -33,6 +37,7 @@ Existing login endpoints and 12-hour tokens remain. Login validates username/pas
 | Method | Endpoint | Purpose / permission |
 |---|---|---|
 | GET | /api/health, /api/capabilities | liveness; honest unavailable integrations |
+| POST | /api/signup | citizen-only registration and automatic token session |
 | POST | /api/login, /api/logout | token session |
 | GET | /api/me | current user |
 | GET | /api/complaints | public redacted list; `mine=true` requires login; limit 1-100 (default 25), offset, status, q (id/category only) |

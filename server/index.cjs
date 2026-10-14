@@ -50,7 +50,7 @@ function verifyPassword(pw, stored) {
   return hash.length === expected.length && crypto.timingSafeEqual(hash, expected)
 }
 
-/* Async variant for the login path: scrypt runs off the event loop so a burst of
+/* Async variant for login and signup: scrypt runs off the event loop so a burst of
    login attempts cannot block other API requests. Sync verify stays for boot-time
    migration/seeding only. */
 const scryptAsync = (pw, salt) => new Promise((resolve, reject) => crypto.scrypt(pw, salt, 64, (err, hash) => err ? reject(err) : resolve(hash)))
@@ -141,6 +141,8 @@ function recordFailure(key, now) {
   loginFailures.set(key, recent)
 }
 
+const signupAttempts = require('./signup.cjs').mount({ app, db, scryptAsync, hashToken })
+
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body || {}
   // Type and length validated BEFORE any hashing: oversized input never reaches scrypt.
@@ -186,4 +188,4 @@ app.use((err, req, res, next) => {
 app.use((req, res) => res.status(404).json({ error:'Not found - this server is API-only' }))
 const PORT = process.env.PORT || 3001
 if (require.main === module) app.listen(PORT, process.env.HOST || '127.0.0.1', () => { sweep(); retention(); console.log(`CivicSync backend on http://127.0.0.1:${PORT}`) })
-module.exports = { app, db, sweep, retention, _loginFailures: loginFailures, stop: () => { clearInterval(sweepTimer); db.close() } }
+module.exports = { app, db, sweep, retention, _loginFailures: loginFailures, _signupAttempts: signupAttempts, stop: () => { clearInterval(sweepTimer); db.close() } }
