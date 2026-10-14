@@ -83,7 +83,8 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
     const base={id:c.id,status:c.status,category:c.category,priority:c.priority,submittedAt:c.submittedAt,deadline:c.deadline,dept:c.dept,escalationLevel:c.escalationLevel,overdue,stage:c.status,legacyDemo:!c.author}
     if(!member(u,c)) return {...base,latestUpdate:`${c.status}. Public tracking omits private complaint details.`,timeline:[]}
     const {submittedTs,deadlineTs,...rest}=c
-    return {...rest,...base,reasons:JSON.parse(c.reasons),severityReasons:JSON.parse(c.severityReasons),timeline:db.prepare('SELECT actor,action AS label,ts,beforeJson,afterJson FROM audit WHERE complaintId=? ORDER BY seq').all(c.id),evidence:db.prepare('SELECT id,stage,actor,mime,sha,ts,capturedTs,reasons FROM evidence WHERE complaintId=?').all(c.id).map(e=>({...e,reasons:JSON.parse(e.reasons)}))}
+    const suggestion=c.status==='Routing Review'&&['reviewer','supervisor'].includes(u.role)?{routingSuggestion:reference.suggestRoute(c)}:{}
+    return {...rest,...base,...suggestion,reasons:JSON.parse(c.reasons),severityReasons:JSON.parse(c.severityReasons),timeline:db.prepare('SELECT actor,action AS label,ts,beforeJson,afterJson FROM audit WHERE complaintId=? ORDER BY seq').all(c.id),evidence:db.prepare('SELECT id,stage,actor,mime,sha,ts,capturedTs,reasons FROM evidence WHERE complaintId=?').all(c.id).map(e=>({...e,reasons:JSON.parse(e.reasons)}))}
   }
   function change(c,u,action,values) {
     const keys=Object.keys(values)

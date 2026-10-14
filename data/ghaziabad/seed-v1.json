@@ -1843,5 +1843,52 @@
     "Vijay Nagar Sec 11 Block C"
    ]
   }
+ },
+ "categoryDepartments": {
+  "source": "https://ghaziabadnagarnigam.in/citizen-charter.aspx",
+  "note": "Charter department and role for each app category. Suggestion only; routes table is not filled because routes need real staff accounts, which do not exist.",
+  "Garbage Collection": {
+   "departments": [
+    "HEALTH"
+   ],
+   "role": "SAFAI NAYAK"
+  },
+  "Streetlights & Electricity": {
+   "departments": [
+    "STREET - LIGHT"
+   ],
+   "role": "Light Inspector (LI)"
+  },
+  "Roads & Potholes": {
+   "departments": [
+    "CIVIL"
+   ],
+   "role": "JUNIOR ENGINEER (J.E)"
+  },
+  "Water Supply & Leakage": {
+   "departments": [
+    "WATER-WORKS"
+   ],
+   "role": "JUNIOR ENGINEER (J.E)"
+  },
+  "Drainage & Sewage": {
+   "departments": [
+    "SEWER",
+    "HEALTH"
+   ],
+   "role": null,
+   "ambiguous": true
+  },
+  "Parks & Public Spaces": {
+   "departments": [
+    "HORTICULTURE"
+   ],
+   "role": "supervisor"
+  },
+  "Other Civic Issues": {
+   "departments": [],
+   "role": null,
+   "ambiguous": true
+  }
  }
 }

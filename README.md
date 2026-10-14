@@ -148,3 +148,8 @@ Phone-only signup/login, recovery and number ownership checks are not implemente
 - Local labelled-photo evaluation: `node scripts/evaluate-detector.cjs /private/photos/manifest.json`. No real civic accuracy result exists yet.
 - 66 automated tests pass with checksum-pinned detector installed (synthetic model smoke is not accuracy testing).
 - Backend API only. Teammate frontend integration and live deployment are not verified.
+
+
+## Routing suggestions (read-only)
+
+A complaint in Routing Review shows reviewers/supervisors a `routingSuggestion`: ward (from the complaint's own text or an exact unique locality name), charter department/role, and staff names from the public Officer's List. It is unverified, never assigned, never creates accounts, and the `routes` table stays empty until a supervisor configures a route. Ambiguous or missing matches show no ward. Staff list re-checked 2026-10-14 (names, designations and wards only, no phone numbers).

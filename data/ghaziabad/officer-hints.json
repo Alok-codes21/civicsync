@@ -740,5 +740,7 @@
     "Names only; no phone numbers or local account bindings",
     "JE coverage is partial; departments cannot be inferred from ward overlap",
     "Not an authorization, current jurisdiction registry or notification channel"
-  ]
+  ],
+  "reExtractedAt": "2026-10-14",
+  "reExtractionNote": "Re-extracted from staffList.aspx on 2026-10-14: 8 ward-assigned officers (4 AE, 4 JE), identical names, designations and ward lists to the 2026-10-13 extraction. Phone/contact columns on the page are deliberately not copied."
 }

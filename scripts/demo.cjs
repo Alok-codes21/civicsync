@@ -21,6 +21,7 @@ async function main(){
   const loc=await call('/api/reference/locality?q=Ghukna');say(`Locality "Ghukna" -> ${loc.result} (wards ${loc.wards.join(',')}); human review required, no auto-assign`)
   say('\n== Scenario A: success path ==')
   let a=await file('Garbage Collection','Garbage pile near market');say(`A1 filed ${a}: ${status(a).status} (no route configured, so no guessing)`)
+  const sg=(await call(`/api/complaints/${a}`,null,'supervisor')).complaint.routingSuggestion;say(`A1b supervisor sees suggestion only: ward ${sg.wardId}, ${sg.department}/${sg.charterRole}, ${sg.staffHints.length} staff name hints, status ${sg.status}, nothing assigned`)
   await call('/api/routes',{ward:'Ghaziabad Ward 38',category:'Garbage Collection',dept:'Sanitation (demo route)',officer:'verma',supervisor:'supervisor',reason:'Demo routing config'},'supervisor')
   await call(`/api/complaints/${a}/route`,{reason:'Supervisor confirmed demo route'},'supervisor');say(`A2 supervisor routed: ${status(a).status}`)
   await call(`/api/complaints/${a}/accept`,{},'verma');say('A3 officer accepted')

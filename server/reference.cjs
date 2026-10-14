@@ -31,3 +31,33 @@ function charter(now) {
     disclaimer: 'Copied from public pages; not an official export or live integration. Human routing review remains required.' }
 }
 module.exports = { staleness, charterSlaDays, matchLocality, charter, seed }
+
+/* Routing suggestion for supervisors/reviewers. NOT a route: nothing is assigned, no account
+   is created, the routes table is untouched. Ward comes from the complaint's own text
+   ("Ward 38") or an exact unique locality name; conflicting or repeated names stay ambiguous. */
+const officerHints = require('./officer-hints.cjs')
+function suggestRoute({ ward, landmark, category }) {
+  const cat = seed.categoryDepartments[category]
+  const found = new Set()
+  const m = /\bward\s*(?:no\.?|number|#)?\s*(\d{1,3})\b/i.exec(String(ward || ''))
+  if (m && seed.wardLocalities.wards[String(Number(m[1]))]) found.add(String(Number(m[1])))
+  let ambiguous = false
+  for (const t of [ward, landmark]) {
+    const r = matchLocality(t)
+    if (r.result === 'unique') found.add(r.wards[0]); else if (r.result === 'ambiguous') { ambiguous = true; r.wards.forEach(w => found.add(w)) }
+  }
+  const wards = [...found].sort((a, b) => Number(a) - Number(b))
+  const status = wards.length === 1 && !ambiguous ? 'suggested_unverified' : wards.length ? 'ambiguous' : 'no_match'
+  const wardId = status === 'suggested_unverified' ? wards[0] : null
+  const deptOk = cat && cat.departments.length === 1 && !cat.ambiguous
+  const hints = wardId ? officerHints.lookup(Number(wardId)) : null
+  return {
+    status, wardId, candidateWards: wards,
+    department: deptOk ? cat.departments[0] : null, departmentCandidates: cat ? cat.departments : [], charterRole: deptOk ? cat.role : null,
+    staffHints: hints ? hints.officers.map(o => ({ name: o.name, designation: o.designation })) : [], zoneAmbiguous: hints ? hints.zoneAmbiguous : null,
+    sources: [seed.sources.wards, seed.sources.charter, seed.sources.staff], ...staleness(),
+    requiresHumanReview: true, automaticAssignment: false, verified: false,
+    notice: 'Suggestion from copied public pages. Supervisor must confirm; nothing is assigned. Staff names are not accounts and have no access.'
+  }
+}
+module.exports.suggestRoute = suggestRoute
