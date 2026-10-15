@@ -240,3 +240,13 @@ The integration point `inspectOriginal(bytes)` currently returns `{status: "unsu
 Tests: `npm test`. Added coverage includes session ownership/expiry/replay/concurrent consumption/transaction rollback, original-byte SHA mismatch, deterministic priorities, no automatic complaint transition, unavailable AI, public redaction, reviewer history/audit, retention and additive migration/restart. Tested on Linux Node 22 and 24; Windows has not been exercised here.
 
 The two subprocess count-output tests use plain string writes rather than colored numeric console formatting. `FORCE_COLOR=1 npm test` was also checked on Linux to cover the terminal-color failure; this is not a Windows execution claim.
+
+## Changes on branch improve-loop (for the frontend owner)
+No response shapes changed. Status codes that are new or stricter (treat 409 as a business-state conflict, not a server error):
+- `POST /api/complaints/:id/repair`: 409 if the required before/after evidence was marked `needs_reupload` or `needs_site_visit` by a reviewer (latest reviewer decision wins; unreviewed evidence still counts).
+- `POST /api/transfers/:id/accept`, `POST /api/complaints/:id/priority`: 409 on a Resolved complaint (reopen first). `POST /api/extensions/:id/review` approve: 409 if the complaint is already Resolved (deny still works).
+- `POST /api/complaints/:id/link`: 409 unless every complaint in both clusters shares the target category and ward.
+- `GET /api/complaints`: `limit` 1-100 and `offset` >= 0 must be plain integers, else 400; ties in `submittedTs` are now ordered by id descending.
+- `GET /api/jurisdictions/lookup`: empty, missing or non-numeric `lat`/`lon` now 400.
+- Numeric ids in `/api/transfers/:id/accept` and `/api/extensions/:id/review`: malformed 400, well-formed but missing 404. Escalation level must be 1, 2 or 3 (else 400).
+- `CORS_ORIGINS` entries are now trimmed; matching is still exact.

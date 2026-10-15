@@ -101,7 +101,7 @@ const app = express()
 app.use(express.json({ limit: '6mb' }))
 app.use((req,res,next)=>{
  res.set('Cache-Control','no-store').set('X-Content-Type-Options','nosniff').set('Referrer-Policy','no-referrer')
- const origin=req.headers.origin,allowed=(process.env.CORS_ORIGINS||'').split(',').filter(Boolean)
+ const origin=req.headers.origin,allowed=(process.env.CORS_ORIGINS||'').split(',').map(o=>o.trim()).filter(Boolean)
  if(origin&&allowed.includes(origin)){res.set('Access-Control-Allow-Origin',origin).set('Vary','Origin').set('Access-Control-Allow-Headers','Content-Type, Authorization, Idempotency-Key').set('Access-Control-Allow-Methods','GET,POST,OPTIONS')}
  if(req.method==='OPTIONS')return res.sendStatus(origin&&!allowed.includes(origin)?403:204)
  next()
