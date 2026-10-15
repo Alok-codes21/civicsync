@@ -8,7 +8,7 @@ Use the SQLite online backup API, which is safe on a running server in WAL mode:
 
     node scripts/backup-db.cjs [destination-file]
 
-This captures every committed row. Do NOT rely on copying the live `.db` file alone while the server runs: in WAL mode recent commits may still sit in the `-wal` file, so a raw copy can be an incomplete snapshot. Backups may contain PII; store them with the same care as the live database.
+It captures a consistent snapshot of the committed database state at the backup point; writes after that point are not part of the snapshot. Do NOT rely on copying the live `.db` file alone while the server runs: in WAL mode recent commits may still sit in the `-wal` file, so a raw copy can be an incomplete snapshot. Backups may contain PII; store them with the same care as the live database.
 
 
 ## Run and test

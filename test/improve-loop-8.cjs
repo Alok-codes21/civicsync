@@ -33,9 +33,13 @@ test('round 9: public and unrelated-citizen responses never leak private markers
  assert.equal((await rawJson('/api/complaints/'+ack+'/contact','alok')).status,403) // owner is not staff
  r=await rawJson('/api/complaints/'+ack+'/contact','supervisor');assert.equal(r.status,200)
  d=JSON.parse(r.text);assert.equal(d.phone,M.phone);assert.equal(d.verified,false)
- // 6. after another event, public timeline still empty
- await call('/api/complaints/'+ack+'/status','alok',null,409).catch(()=>{}) // any state attempt; filing event already suffices
+ // 6. after a real workflow event (supervisor routing), public timeline still empty
+ tokens.verma=(await call('/api/login',null,{username:'verma',password:'demo123'})).token
+ await call('/api/complaints/'+ack+'/route','supervisor',{reason:'Round 9 routing'},200)
  r=await rawJson('/api/complaints/'+ack,null);assert.deepEqual(JSON.parse(r.text).complaint.timeline,[])
+ // assigned officer is allowed the contact endpoint too
+ r=await rawJson('/api/complaints/'+ack+'/contact','verma');assert.equal(r.status,200)
+ assert.equal(JSON.parse(r.text).phone,M.phone)
 })
 
 test('round 9: documented backup script captures a consistent snapshot of a live WAL database',()=>{
