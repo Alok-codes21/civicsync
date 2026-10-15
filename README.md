@@ -270,3 +270,16 @@ Round 6 (hardening, no status-code or response-shape removals):
 - New operator/CLI tests: `scripts/provision-user.cjs` rejects empty/short/over-512-character passwords, invalid roles and control-character display names without creating the database; accepts exactly 512 characters; strips one trailing newline/CRLF; never overwrites an existing account; closes the database cleanly.
 - New i18n coverage tests: known errors return Hindi with `translationFallback:false`, unknown messages keep their English text with `translationFallback:true`, unsupported languages stay English, statuses are unchanged, and machine fields (acknowledgement number) are never translated.
 - New tests: audit-chain tamper detection (payload change and broken prevHash both invalidate), migration atomicity incl. forced-failure rollback on a temporary legacy database, jurisdiction provenance, language-input shapes, demo exit codes.
+
+## Clean-checkout verification record (15 October 2026)
+
+Results below are from an actual fresh clone (no copied `node_modules`), not from an existing worktree.
+
+- Revision tested: `2ce44ee` (branch `improve-loop`, round 10)
+- Environment: Linux x64, Node v22.23.3, npm 10.9.9
+- `npm ci`: exit 0 (0 vulnerabilities)
+- `npm test`: exit 0 — 151 tests, 150 pass, 0 fail, 1 skipped (optional AI detector model not bundled)
+- `npm run demo`: exit 0 — audit chain reported valid (33 events, local hash chain, not externally anchored)
+- `git status --short` after the runs: clean, no tracked files modified
+
+This pass exercised Node 22.23.3 only. The Node 24.21.0 Linux verification mentioned above predates this pass and was not re-run here; Windows execution remains untested. Reproduce with: `node --version && npm --version && node -p "process.platform + ' ' + process.arch" && npm ci && npm test && npm run demo && git status --short`.
