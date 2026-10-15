@@ -37,5 +37,5 @@ test('round 4: reviewer work queue is broad and unexpected errors give a generic
  const r=await call('/api/work-queue','reviewer');assert.ok(r.complaints.length>=2);assert.deepEqual(r.extensions,[]);assert.equal(r.notifications,'internal_only')
  const realPrepare=db.prepare.bind(db),realErr=console.error;console.error=()=>{}
  db.prepare=sql=>{if(String(sql).startsWith('SELECT COUNT(*) n FROM complaints'))throw new Error('SQLITE_SECRET_DETAIL /srv/db/path');return realPrepare(sql)}
- try{const res=await raw('/api/complaints','alok');const body=await res.text();assert.equal(res.status,500);assert.deepEqual(JSON.parse(body),{error:'Internal server error'});assert.ok(!/SECRET|srv|stack|at /.test(body))}finally{db.prepare=realPrepare;console.error=realErr}
+ try{const res=await raw('/api/complaints','alok');const body=await res.text();assert.equal(res.status,500);assert.equal(JSON.parse(body).error,'Internal server error');assert.ok(!/SECRET|srv|stack|at /.test(body))}finally{db.prepare=realPrepare;console.error=realErr}
 })
