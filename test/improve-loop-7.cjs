@@ -27,7 +27,7 @@ test('round 8: provision-user happy paths, newline handling, duplicate safety, d
  const u1=d.prepare("SELECT passhash,name FROM users WHERE username='newuser1'").get()
  assert.match(u1.passhash,/^scrypt:[0-9a-f]{32}:[0-9a-f]{128}$/);assert.equal(u1.name,'New User')
  d.close()
- // duplicate username: nonzero, original hash untouched, and the db is usable again (was closed cleanly)
+ // duplicate username: nonzero, original hash untouched, and the db is usable again (the database stays open and usable after a duplicate-account failure)
  r=prov(['newuser1','Other Name','official'],'different password 456',dbp);assert.notEqual(r.status,0);assert.match(r.stderr,/not overwritten/)
  const d2=new D(dbp,{readonly:true})
  assert.equal(d2.prepare("SELECT name FROM users WHERE username='newuser1'").get().name,'New User')

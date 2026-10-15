@@ -2,6 +2,15 @@
 
 API-only Node/Express/SQLite backend. No frontend, paid API, SMS, Aadhaar, municipal connection or deployment is included. An optional local-only image model is available as an unvalidated review signal. No fake photo/GPS/verification claims are inserted. This API includes authenticated civic workflows; existing route names remain, but legacy unauthenticated writes are disabled.
 
+## Backups
+
+Use the SQLite online backup API, which is safe on a running server in WAL mode:
+
+    node scripts/backup-db.cjs [destination-file]
+
+This captures every committed row. Do NOT rely on copying the live `.db` file alone while the server runs: in WAL mode recent commits may still sit in the `-wal` file, so a raw copy can be an incomplete snapshot. Backups may contain PII; store them with the same care as the live database.
+
+
 ## Run and test
 
 ```
