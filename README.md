@@ -250,3 +250,10 @@ No response JSON shapes were intentionally changed; some validation and state-co
 - `GET /api/jurisdictions/lookup`: empty, missing or non-numeric `lat`/`lon` now 400.
 - Numeric ids in `/api/transfers/:id/accept` and `/api/extensions/:id/review`: malformed 400, well-formed but missing 404. Escalation level must be 1, 2 or 3 (else 400).
 - `CORS_ORIGINS` entries are now trimmed; matching is still exact.
+
+Round 6 (hardening, no status-code or response-shape removals):
+- Legacy plaintext-password migration is now one atomic transaction: a mid-migration failure rolls back instead of leaving a half-migrated `users` table. Back up real databases before upgrading regardless.
+- `GET /api/jurisdictions`: the documented `sources` field is now actually populated from the provenance manifest (dataset file, records dates, SBM source, redistributors, rejected-source count); previously it was silently omitted. Additive only.
+- Repeated `?lang=` query values (array-shaped input) now fall back to English instead of throwing a 500; normal Hindi/English behaviour unchanged.
+- `npm run demo` cleanup refactored to a single awaited path (listener + idle sockets + database closed exactly once, nonzero exit preserved on scenario failure). The demo header now says "no external network calls" (it binds a local ephemeral port).
+- New tests: audit-chain tamper detection (payload change and broken prevHash both invalidate), migration atomicity incl. forced-failure rollback on a temporary legacy database, jurisdiction provenance, language-input shapes, demo exit codes.

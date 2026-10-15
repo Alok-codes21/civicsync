@@ -1,5 +1,5 @@
 /* Repeatable judge demo: `npm run demo`. Runs the real Express app in-process on an
-   in-memory database (nothing written to disk, no network, no real data).
+   in-memory database (nothing written to disk, no external network calls, no real data).
    Scenario A: file -> routing review -> supervisor route -> accept -> repair -> independent verify -> Resolved.
    Scenario B: file -> deadline missed (clock moved in demo only) -> escalation L1-L3 -> repair -> dispute -> In Progress
                -> repair again -> approve -> owner reopens after Resolved.
@@ -43,5 +43,9 @@ async function main(){
   await call(`/api/complaints/${b}/verify`,{decision:'approve',reason:'Now fixed'},'reviewer');say(`B6 independent reviewer approved: ${status(b).status}`)
   await call(`/api/complaints/${b}/status`,{status:'Reopened',note:'Problem is back after rain'},'alok');say(`B7 owner reopens after Resolved: ${status(b).status}, reopenCount ${status(b).reopenCount}`)
   const audit=await call('/api/audit',null,'supervisor');say(`\nAudit chain valid: ${audit.valid} (${audit.events.length} events, local hash chain, not externally anchored)`)
+  if(process.env.DEMO_FORCE_FAIL==='1')throw new Error('forced failure (test hook)')
 }
-main().then(()=>{stop();server.close()},e=>{console.error('DEMO FAILED:',e.message);stop();server.close();process.exitCode=1})
+// Single cleanup path: close the listener (idle keep-alive sockets too) and the database exactly
+// once, on success and on failure; a scenario failure keeps its nonzero exit code.
+async function cleanup(){try{stop()}catch{}if(server.closeIdleConnections)server.closeIdleConnections();await new Promise(r=>server.close(r))}
+main().then(cleanup,async e=>{console.error('DEMO FAILED:',e.message);process.exitCode=1;await cleanup()})

@@ -70,10 +70,14 @@ const hashToken = t => crypto.createHash('sha256').update(t).digest('hex')
 {
   const cols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name)
   if (cols.includes('password') && !cols.includes('passhash')) {
-    db.prepare('ALTER TABLE users ADD COLUMN passhash TEXT').run()
-    for (const u of db.prepare('SELECT username, password FROM users').all())
-      db.prepare('UPDATE users SET passhash=? WHERE username=?').run(hashPassword(u.password), u.username)
-    db.prepare('ALTER TABLE users DROP COLUMN password').run()
+    // One transaction: a mid-migration failure must roll back, never leave a
+    // half-migrated users table on a real existing database.
+    db.transaction(() => {
+      db.prepare('ALTER TABLE users ADD COLUMN passhash TEXT').run()
+      for (const u of db.prepare('SELECT username, password FROM users').all())
+        db.prepare('UPDATE users SET passhash=? WHERE username=?').run(hashPassword(u.password), u.username)
+      db.prepare('ALTER TABLE users DROP COLUMN password').run()
+    })()
     console.log('migrated users table: plaintext passwords re-hashed with scrypt')
   }
 }
