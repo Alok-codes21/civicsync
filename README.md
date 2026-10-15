@@ -170,7 +170,7 @@ Phone-only signup/login, recovery and number ownership checks are not implemente
 
 - Read-only Ghaziabad officer hints: reviewer/supervisor `GET /api/jurisdictions/officer-hints?ward=38`. AE lists cover 100 wards; JE lists 56. Names only, no phone numbers or account bindings. All remain unverified and manual-review-only. Source A/ए numbering may not match 2022 polygons. Multiple zones are retained, not guessed.
 - Local labelled-photo evaluation: `node scripts/evaluate-detector.cjs /private/photos/manifest.json`. No real civic accuracy result exists yet.
-- 66 automated tests pass with checksum-pinned detector installed (synthetic model smoke is not accuracy testing).
+- Older note (historical count, see `npm test` for the current suite): 66 automated tests passed with checksum-pinned detector installed (synthetic model smoke is not accuracy testing).
 - Backend API only. Teammate frontend integration and live deployment are not verified.
 
 
