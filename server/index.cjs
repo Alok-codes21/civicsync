@@ -88,11 +88,12 @@ function fmtTs(ts) { return new Date(ts).toISOString() }
 const workflows = require('./workflows.cjs')({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS })
 const { sweep, retention } = workflows
 require('./detector.cjs').load()
-const sweepTimer = setInterval(() => {
-  sweep()
-  retention()
-  db.prepare('DELETE FROM tokens WHERE createdTs < ?').run(Date.now() - 12 * 60 * 60 * 1000)
-}, 60000)
+// Each maintenance step is isolated: one failing step is logged and retried next tick, and never kills the timer or the process.
+function runMaintenance(log = console.error) {
+  const steps = [['sweep', () => sweep()], ['retention', () => retention()], ['token cleanup', () => db.prepare('DELETE FROM tokens WHERE createdTs < ?').run(Date.now() - 12 * 60 * 60 * 1000)]]
+  for (const [label, fn] of steps) { try { fn() } catch (e) { log('maintenance step failed: ' + label + ': ' + (e && e.message)) } }
+}
+const sweepTimer = setInterval(runMaintenance, 60000)
 sweepTimer.unref()
 
 /* ---------- app ---------- */
@@ -188,4 +189,4 @@ app.use((err, req, res, next) => {
 app.use((req, res) => res.status(404).json({ error:'Not found - this server is API-only' }))
 const PORT = process.env.PORT || 3001
 if (require.main === module) app.listen(PORT, process.env.HOST || '127.0.0.1', () => { sweep(); retention(); console.log(`CivicSync backend on http://127.0.0.1:${PORT}`) })
-module.exports = { app, db, sweep, retention, _loginFailures: loginFailures, _signupAttempts: signupAttempts, stop: () => { clearInterval(sweepTimer); db.close() } }
+module.exports = { app, db, sweep, retention, _runMaintenance: runMaintenance, _loginFailures: loginFailures, _signupAttempts: signupAttempts, stop: () => { clearInterval(sweepTimer); db.close() } }
