@@ -7,8 +7,24 @@ const crypto = require('crypto')
 const Database = require('better-sqlite3')
 
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'civicsync.db')
-const db = new Database(DB_PATH)
+let db
+try {
+  db = new Database(DB_PATH)
+} catch (e) {
+  console.error(`Startup error: cannot open database at DB_PATH=${DB_PATH} (${e.code || e.message}). Check that the parent directory exists and is writable.`)
+  process.exit(1)
+}
 db.pragma('journal_mode = WAL')
+db.pragma('foreign_keys = ON')
+// Verify the pragmas actually took effect instead of silently assuming configuration succeeded.
+// (:memory: databases legitimately report journal_mode "memory"; WAL is only expected on files.)
+const journalMode = String(db.pragma('journal_mode', { simple: true })).toLowerCase()
+if (DB_PATH !== ':memory:' && journalMode !== 'wal') console.warn(`Startup warning: journal_mode is ${journalMode}, expected wal (this filesystem may not support WAL).`)
+if (db.pragma('foreign_keys', { simple: true }) !== 1) console.warn('Startup warning: foreign_keys pragma could not be enabled.')
+// Validate PORT only when explicitly set; the default stays 3001 and HOST stays loopback.
+function parsePort(v) { if (v === undefined || v === '') return 3001; if (!/^\d{1,5}$/.test(v)) return null; const n = Number(v); return n >= 1 && n <= 65535 ? n : null }
+const PORT = parsePort(process.env.PORT)
+if (PORT === null) { console.error(`Startup error: PORT must be an integer between 1 and 65535 (got ${JSON.stringify(process.env.PORT)}).`); process.exit(1) }
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS complaints (
@@ -191,6 +207,5 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error:'Internal server error' })
 })
 app.use((req, res) => res.status(404).json({ error:'Not found - this server is API-only' }))
-const PORT = process.env.PORT || 3001
 if (require.main === module) app.listen(PORT, process.env.HOST || '127.0.0.1', () => { sweep(); retention(); console.log(`CivicSync backend on http://127.0.0.1:${PORT}`) })
 module.exports = { app, db, sweep, retention, _runMaintenance: runMaintenance, _loginFailures: loginFailures, _signupAttempts: signupAttempts, stop: () => { clearInterval(sweepTimer); db.close() } }
