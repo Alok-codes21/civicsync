@@ -1,0 +1,68 @@
+{
+  "municipality": "Ghaziabad",
+  "checkedAt": "2026-10-13",
+  "status": "partial_2022_sbm_polygons_loaded_unverified",
+  "geometryLoaded": true,
+  "loadedDataset": {
+    "file": "ghaziabad-wards-2022-sbm.geojson",
+    "wardCount": 94,
+    "expectedWards": 100,
+    "missingWards": [
+      79,
+      81,
+      87,
+      98,
+      99,
+      100
+    ],
+    "recordsDated": "2021-12-30 to 2022-03-13",
+    "source": "Swachh Bharat Mission (Urban) GIS, Ministry of Housing and Urban Affairs (sbmurban.org)",
+    "redistributors": [
+      {
+        "url": "https://github.com/ramSeraph/indian_admin_boundaries/releases",
+        "license": "CC0 1.0 - attribute datameet and the original government source where possible"
+      },
+      {
+        "url": "https://github.com/yashveeeeeeer/india-geodata",
+        "license": "CC0-1.0 declared in data/urban/wards/metadata.json",
+        "release": "urban/boundaries 2026-03-08"
+      }
+    ],
+    "geometryValidation": "94/94 polygons valid (OGC), bbox lon 77.317-77.518 lat 28.622-28.746, EPSG:4326",
+    "crossCheck": "GNN zones/wards page (checked 2026-10-13): numbering matches on comparable names (e.g. Shalimar Garden Main 37, Shaheed Nagar 34/90, Mausam Vihar 66, Kuti 29). Known source glitches: ward 17 name field carries number 28; ward 88 name says 83; ward 78 name says 73; ward 16 Morta vs GNN listing Morta under ward 50. Glitches preserved in sourceName property.",
+    "caveats": [
+      "Not an official GNN export",
+      "2022 vintage; delimitation may have changed",
+      "6 wards missing: 79,81,87,98,99,100",
+      "Matches are unverified hints, not operational truth",
+      "No officer routing derived from polygons"
+    ]
+  },
+  "rejectedSources": [
+    {
+      "url": "https://github.com/datameet/Municipal_Spatial_Data",
+      "commit": "9b4d1c2ece54cdeb6f5e8bad9ccad7844f783b17",
+      "finding": "No Ghaziabad dataset (issue #44 open since 2022)."
+    },
+    {
+      "url": "https://lgdirectory.gov.in/downloadDirectory.do",
+      "finding": "Manual CAPTCHA; not bypassed. Lists are not polygon boundaries."
+    },
+    {
+      "url": "https://ghaziabadnagarnigam.in/zones-and-wards.aspx",
+      "finding": "Official ward/locality directory, not geometry; used only to cross-check numbering."
+    },
+    {
+      "url": "https://livingatlas.esri.in/server1/rest/services/Wards/India_Ward_Boundaries/MapServer/0",
+      "finding": "80 Ghaziabad features sourced to 2018 Springer figure; Morta 20 vs GNN 50; licenseInfo blank. Rejected."
+    },
+    {
+      "url": "http://gis.gdaghaziabad.in/",
+      "finding": "Development-scheme GIS only; terms exclude legal use."
+    },
+    {
+      "url": "https://www.openstreetmap.org/",
+      "finding": "Ward-level boundary coverage unverified; Overpass endpoints timed out during checks."
+    }
+  ]
+}

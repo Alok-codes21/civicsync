@@ -1,0 +1,18 @@
+{
+  "model": "onnx-community/ai-image-detection-ONNX",
+  "revision": "e3cfe99f2841930a040a6281682c10c989965603",
+  "file": "onnx/model_quantized.onnx",
+  "sha256": "11a8189f453b9bd7f3bbb6527f8aa5a116e6b6559ca933951ed434abf6ac8d95",
+  "sizeBytes": 87333629,
+  "license": "Apache-2.0 per model card",
+  "source": "https://huggingface.co/onnx-community/ai-image-detection-ONNX",
+  "attribution": [
+    "Google ViT",
+    "dima806/ai_vs_real_image_detection",
+    "CapCheck",
+    "ONNX Community"
+  ],
+  "accuracyOnCivicPhotos": null,
+  "trainedOn": "CIFAKE",
+  "status": "optional experimental local inference, unvalidated"
+}

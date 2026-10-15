@@ -1,17 +1,22 @@
 {
   "name": "civicsync-backend",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": false,
   "description": "CivicSync civic issue escalation - demo backend (Express + SQLite, $0 stack)",
   "main": "server/index.cjs",
   "scripts": {
-    "start": "node server/index.cjs"
+    "start": "node server/index.cjs",
+    "setup:detector": "node scripts/download-model.cjs",
+    "test": "node --test test/*.cjs",
+    "demo": "node scripts/demo.cjs"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20.9.0"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
-    "express": "^5.3.0"
+    "express": "^5.3.0",
+    "onnxruntime-node": "1.30.0",
+    "sharp": "0.35.5"
   }
 }

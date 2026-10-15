@@ -1,57 +1,164 @@
-# CivicSync - backend (civic issue escalation demo)
+# CivicSync backend v2 - local prototype workflows
 
-Express + better-sqlite3 (SQLite) REST API for the CivicSync civic complaint escalation app. 100% free stack, no paid APIs, no external services. API-only: the frontend lives in a separate repo (a teammate owns it); anything outside /api returns a JSON 404.
+API-only Node/Express/SQLite backend. No frontend, paid API, SMS, Aadhaar, municipal connection or deployment is included. An optional local-only image model is available as an unvalidated review signal. No fake photo/GPS/verification claims are inserted. This feature branch is a breaking API update and has not been merged.
 
-## Run it
+## Run and test
 
-```bash
-npm install
-npm start            # http://localhost:3001 (PORT env var overrides)
+```
+npm ci
+npm test
+DEMO_MODE=true npm start
 ```
 
-The SQLite database (server/civicsync.db) is created and seeded with Lucknow sample data automatically on first boot - it is gitignored and not part of the source. Existing databases from the earlier plaintext-password version are migrated automatically on boot (passwords are re-hashed with scrypt, old column dropped).
+`HOST` defaults to loopback 127.0.0.1. `PORT` defaults to 3001. Node >=20.9.0 is required for patched sharp. `DB_PATH` overrides `server/civicsync.db`. Old complaint tables are migrated additively; existing records are preserved but their unsupported evidence claims are marked legacy/unverified. Fresh databases have no fictional complaint seed. Back up an existing database before upgrading. Tests use an isolated in-memory database, actual HTTP requests and a temporary legacy database.
 
-## Demo logins
+## Authentication and prototype limits
 
-| Role     | Username | Password |
-|----------|----------|----------|
-| Citizen  | alok     | demo123  |
-| Official | verma    | demo123  |
+Demo mode is OFF by default. Set `DEMO_MODE=true` only for sample accounts below, which all use `demo123`:
 
-## API endpoints
+| Username | Role |
+|---|---|
+| alok / citizen2 | citizen |
+| verma | official |
+| reviewer | independent reviewer |
+| supervisor | supervisor |
+| assisted | assisted intake desk |
 
-| Method | Path | Auth | What it does |
-|--------|------|------|--------------|
-| GET  | /api/health | - | liveness check |
-| POST | /api/login | - | body {username, password} -> {token, user}; bad credentials get 401; rate limited: 5 failed attempts per IP+username in 10 minutes -> 429 with Retry-After |
-| POST | /api/logout | Bearer | invalidates the token |
-| GET  | /api/me | Bearer | current user |
-| GET  | /api/complaints | - | list; optional ?status= and ?q= filters |
-| GET  | /api/complaints/:id | - | track one complaint by acknowledgement number (e.g. SHG-2026-1042), case-insensitive; public |
-| POST | /api/complaints | optional | file a complaint {title, category, description, ward, landmark?, priority?} -> real acknowledgement number, rule-based auto-assignment to a department officer, priority-based deadline |
-| POST | /api/complaints/:id/status | official for normal status changes; any logged-in user may reopen | body {status, note?}; accepts Submitted, Assigned, In Progress, Resolved or Reopened; writes a timeline event |
-| POST | /api/complaints/:id/events | - | add a timeline event {label, detail, kind}; open in this demo so anonymous citizens can attach evidence |
-| GET  | /api/stats/public | - | aggregate counts for the public dashboard |
+These are public sample credentials, not secure production identities. Use `DEMO_MODE=false` to stop creating demo accounts/routes. This does NOT delete previously created demo accounts. Operator-only local provisioning is available through `scripts/provision-user.cjs`; real staff authority verification, password rotation/reset, secure hosting, backups, quotas and encryption are pending. A retention sweep deletes evidence and redacts title, description, landmark, coordinates, ward and latestUpdate on old resolved records after 90 days, and pseudonymizes the complaint author; it keeps accountability fields (category, priority, status history, officer) and does not purge old audit entries or backups. Do not put actual citizen evidence into a publicly reachable demo instance.
 
-## Auto-escalation engine (real, not simulated)
+Citizen self-signup is available with `POST /api/signup`, including when demo mode is off. Body: `{name, username, password, phone?}`. Name is trimmed (1-100 characters); username is trimmed/lowercased (3-60 letters, digits, `_` or `-`); password is 12-128 characters and hashed with asynchronous scrypt. Optional phone uses the same Indian mobile format check as `/api/me/phone` and stays unverified, with no OTP/SMS. New users are always citizens; attempts to request staff roles are rejected. Staff accounts still need operator provisioning or local demo seeds.
 
-A sweep runs at boot, every 60 seconds, and on each read:
+Success is 201 with `{token, user: {username, name, role: "citizen"}}`, automatically signed in with the same 12-hour session policy as login. Phone supplied: `phoneSaved:true, phoneVerified:false` (the number itself is not echoed). Invalid fields return 400, duplicate usernames return 409, and attempt number six from one IP within 10 minutes returns 429 with `Retry-After`. Every attempt counts, including failures and successes. Signup rate limiting is in-memory, bounded to 1000 IPs, resets on restart and is not a production abuse-control service. Do not trust client-supplied forwarding headers; deploying behind a proxy needs deliberate proxy/rate-limit configuration. No phone-based login, account recovery or identity verification is provided.
 
-- deadline passed -> L1, Overdue, Ward Officer
-- >= 2 days overdue -> L2, Escalated, Zonal Officer
-- >= 7 days overdue -> L3, Escalated, Municipal Commissioner
+Existing login endpoints and 12-hour tokens remain. Login validates username/password type and length before hashing and verifies with asynchronous scrypt so bursts of attempts do not block the event loop; failed-attempt rate limiting is in-memory and bounded (prototype-grade, resets on restart). Bearer tokens are stored only as SHA-256 hashes, so a database copy cannot be replayed as a live session. Filing now REQUIRES a bearer token. The public acknowledgement lookup remains but returns ONLY status/category/priority/deadline/department/escalation and workflow-stage summaries. It omits names, exact location, title, description, landmark, notes, raw audit payloads and evidence. Owners, assigned officers, reviewers and supervisors receive authorized detail. Reviewers/supervisors are deliberately broad roles in this prototype.
 
-Every escalation writes a timeline event on the complaint.
+## Core APIs
 
-## Security notes (demo-grade by design)
+| Method | Endpoint | Purpose / permission |
+|---|---|---|
+| GET | /api/health, /api/capabilities | liveness; honest unavailable integrations |
+| POST | /api/signup | citizen-only registration and automatic token session |
+| POST | /api/login, /api/logout | token session |
+| GET | /api/me | current user |
+| GET | /api/complaints | public redacted list; `mine=true` requires login; limit 1-100 (default 25), offset, status, q (id/category only) |
+| GET | /api/complaints/:id | redacted public tracking or authorized full detail |
+| POST | /api/complaints | logged-in citizen filing / intake-desk filing |
+| POST | /api/complaints/:id/accept | assigned officer / supervisor accepts assignment |
+| POST | /api/complaints/:id/status | `In Progress` by accepted assigned officer; `Reopened` only owner of a resolved complaint; note required |
+| POST | /api/complaints/:id/events | always 410: arbitrary events disabled |
+| GET | /api/work-queue | officer work/transfers or reviewer/supervisor queue |
 
-- Passwords are hashed with Node's built-in crypto scrypt (per-user random salt, timing-safe compare) - no plaintext stored passwords, no extra dependencies.
-- Tokens are opaque random strings in a DB table and expire 12 hours after login; an expired token gets 401 and is deleted. Expired tokens are also purged once a minute.
-- Login is rate limited: 5 failed attempts per IP+username within 10 minutes locks further attempts until the window passes (429 with Retry-After). In-memory, so counters reset on restart.
-- Still demo auth: no password reset flow, no refresh tokens, and the demo logins above are public by design.
-- No email/SMS/WhatsApp notifications.
-- Sample data is fictional Lucknow complaints.
+Filing body: `{title, description, category, ward, landmark?, lat?, lon?, accuracy?, hazards?, priority?, language?}`. Category must match the existing categories in `server/seed.cjs`. `language` supports en/hi content codes. `Accept-Language: hi-IN` or `?lang=hi` translates common API errors/acknowledgements. Unsupported messages explicitly return translationFallback; machine codes remain stable. No automatic content translation. Submitted `priority` is validated and recorded in audit but cannot override server rules. `open_manhole`/`live_wire` hazard codes set Critical; `unsafe_road`/`water_loss`/`blocked_access` set High; otherwise Medium. Hazards are citizen claims, not validated physical severity. SLAs are prototype policy: Critical 2, High 5, Medium 7, Low 10 days from submission. A supervisor can review priority but cannot silently extend the deadline through that endpoint.
 
-## Suggested next steps
+Default jurisdiction is Ghaziabad only. Ward polygons are partial vintage data (94 of 100 wards, 2022 SBM-derived, unverified with GNN); lookups return a likely ward as an unverified hint and never route to an officer. Complaints without an explicitly configured prototype route go to Routing Review with no guessed officer. The old Lucknow demo routes (Ward 12 - Gomti Nagar, Ward 8 - Aliganj, Ward 3 - Hazratganj) are disabled by default, including when found in an existing database. Only `DEMO_ROUTES=true` enables them for historical demo/test compatibility. They are never Ghaziabad data or official boundaries. New IDs have random suffixes; do not parse acknowledgement suffixes as integers.
 
-OTP login, password reset flow, photo upload storage, SMS/WhatsApp alerts on status change, officer workload balancing, public upvoting, deployment on a free tier (Render/Railway).
+## Evidence, repair and dispute APIs
+
+| Method | Endpoint | Body / permission |
+|---|---|---|
+| POST | /api/complaints/:id/evidence | `{stage:before/after/dispute, mime:image/png or image/jpeg, base64, capturedTs?, lat?, lon?, accuracy?}`; private member access, after requires assigned worker |
+| GET | /api/evidence/:id | authorized raw bytes, no-store; no public evidence URLs |
+| POST | /api/complaints/:id/repair | `{note}`; assigned worker, accepted assignment, before and their after evidence required |
+| POST | /api/complaints/:id/verify | `{decision:approve/dispute, reason}`; citizen owner or independent reviewer, never repair submitter |
+| POST | /api/complaints/:id/evidence-review | `{decision:needs_reupload/accepted_for_work/needs_site_visit, reason}`; reviewer |
+| POST | /api/complaints/:id/priority | `{priority, reason}`; supervisor |
+| GET | /api/complaints/:id/related | private duplicate/recurrence candidates |
+| POST | /api/complaints/:id/link | `{target, reason}`; reviewer/supervisor; same category+ward, within 100m; reports retained |
+
+Before/after uploads are stored privately in SQLite (max 4 MB each, 20 per complaint). Full decoding rejects malformed files and caps input at 16 million pixels. SHA-256 detects exact-byte reuse. 64-bit dHash can flag some resized/recompressed copies (Hamming distance <=6), but not reliable arbitrary crops/edits. Flat images are flagged as unreliable; similarity checks inspect at most the latest 2000 hashes from 90 days, exclude legacy unhashed evidence, and never expose matching complaint IDs. Accepted uploads are re-encoded with Sharp into the same PNG/JPEG format with all metadata (EXIF/GPS/camera tags) stripped; original bytes are never stored. Malware scanning is pending. All cheap checks (authentication, access, stage, MIME, base64 shape, byte size, file signature, per-user rate limit of 20 uploads per 10 minutes) run before any image decoding or AI inference. Server receive times and hashes are real. Capture times/GPS are client claims. Old photo (>7 days), reuse, missing metadata, accuracy uncertainty and location mismatch (>150m) produce reason codes and human review, never AI confidence or automatic rejection. GPS attestation, EXIF validation and tamper detection are NOT implemented. Optional AI inference is local, experimental and unvalidated, with null civic-photo accuracy and human review only.
+
+Repair -> Verification Pending -> citizen/independent reviewer approval -> Resolved. Dispute returns to work. These are authenticated workflow decisions, not proof of a physical inspection. Resolved owners can reopen with a reason, a fresh deadline, a reset escalation level and incremented recurrence cycle. The original SLA remains for metrics.
+
+## Routing, handoff, extensions and escalation
+
+| Method | Endpoint | Body / permission |
+|---|---|---|
+| POST | /api/routes | `{ward,category,dept,officer,supervisor,reason}`; supervisor; known users; configured-not-verified mapping |
+| POST | /api/complaints/:id/route | `{reason}`; supervisor applies existing mapping |
+| POST | /api/complaints/:id/transfer | `{target,reason}`; assigned worker/supervisor requests transfer |
+| POST | /api/transfers/:id/accept | target officer only; old owner retained until acceptance |
+| POST | /api/complaints/:id/extensions | `{deadlineTs,reason}`; assigned worker/supervisor; future deadline <=30 days ahead |
+| POST | /api/extensions/:id/review | `{decision:approve/deny,reason}`; different supervisor approves; original deadline preserved |
+| GET | /api/escalations | supervisor internal escalation queue |
+| POST | /api/complaints/:id/escalations/:level/accept | `{reason}`; supervisor accepts internal task; no municipal delivery implied |
+| GET | /api/audit | supervisor: append-only records + hash-chain validation |
+
+Sweeps run at boot, every minute and reads. Overdue is calculated independently of status, so L3 cannot be hidden by In Progress. L1 starts after the deadline, L2 after 2 days, L3 after 7 days. Escalation tasks are unique per complaint/reopen cycle/level. They are internal queues only: no email/SMS, real authority integration, reassignment or guarantee of repair. Demo supervisors stand in for all three authority levels; this is not a real hierarchy.
+
+Authenticated workflow mutations and their audit events are transactional. Audit stores actor, server timestamp, redacted new before/after snapshots and hash chain. Old immutable audit entries may still contain personal data; event notes in legacy databases and backup files require a separate operator policy. SQL triggers prevent UPDATE/DELETE. This is application-level protection, not an external or legally immutable log: a database administrator can replace the file.
+
+## Metrics, access and impact
+
+- `/api/stats/public`: non-legacy complaint totals, independent overdue count, unique issue counts, reopen counts, median resolution time, original-SLA performance, severity mix.
+- `/api/stats/comparison`: descriptive department counts, sample size and mix; standardizes original-SLA rates by category and severity only when every global stratum has >=10 matured cases in the department. No ranking or validated fairness claim. Unresolved matured complaints count in the denominator.
+- `/api/stats/workload`: supervisor-only officer workload/severity/outcomes. No validated risk-adjusted performance score.
+- `/api/stats/hotspots`: supervisor-only 150m connected-component clusters by category over 90 days; >=3 unique issue IDs flag maintenance review. Rounded centres, client location and chaining remain limits. No trained predictive model.
+- POST `/api/complaints/:id/impact`: worker `{metric:water_loss_litres/road_closure_hours/repair_cost_inr,value,unit,note}`; reported observation only.
+- GET `/api/impact`: supervisor observations. No demonstrated causal reduction, baseline or controlled evaluation.
+
+Assisted desk filing accepts `citizenUsername` or creates an unclaimed citizen record without any login secret to distribute. The original intake actor can read its unclaimed report. Channels include phone/desk/assisted/offline. Retry buffered requests using the same `Idempotency-Key`; repeated identical requests return the original acknowledgement, conflicting payloads return 409. This is a backend sync contract, not a delivered offline app, anonymous public access or connected telephone/SMS/IVR. Claiming an unclaimed report still needs an identity-verification workflow. Browser accessibility and translations belong to the teammate frontend and remain untested.
+
+## Frontend migration required
+
+1. Send Authorization on filing, private details, evidence and staff workflows. Expect 401/403 and 409 state errors.
+2. Treat acknowledgements as opaque strings. Lists are paginated; public details are deliberately redacted.
+3. Replace arbitrary `/events` and direct `Resolved` status writes with private evidence -> repair -> independent verify.
+4. Display Routing Review and Verification Pending; overdue is a separate boolean even if work stage stays Reopened/Verification Pending.
+5. Use owner-only reopen with note; staff acceptance is required before progress/repair.
+6. Add staff work queue, transfer acceptance, extension review and supervisor routing screens if those features are exposed.
+7. Display risk/severity reason codes and missing integration notices honestly. Never label GPS/AI/Aadhaar as verified.
+
+## Ghaziabad ward data (13 October 2026, partial 2022 SBM dataset)
+
+Partial vintage ward polygons are loaded. This is not a completed official ward-dataset integration.
+
+- Source: Swachh Bharat Mission (Urban) GIS, Ministry of Housing and Urban Affairs, redistributed CC0 1.0 by [ramSeraph/indian_admin_boundaries](https://github.com/ramSeraph/indian_admin_boundaries/releases) and [yashveeeeeeer/india-geodata](https://github.com/yashveeeeeeer/india-geodata). Attribution: Swachh Bharat Mission / MoHUA and the redistributors.
+- Coverage: 94 of 100 Ghaziabad wards (ULB code 800734); missing 79, 81, 87, 98, 99, 100. Records dated Dec 2021 - Mar 2022.
+- Cross-check against the [official GNN zones/wards directory](https://ghaziabadnagarnigam.in/zones-and-wards.aspx) (13 Oct 2026): numbering matches on comparable names (Shalimar Garden Main 37, Shaheed Nagar 34/90, Mausam Vihar 66, Kuti 29). Known source glitches: ward 17 name field carries number 28, ward 88 name says 83, ward 78 name says 73, and ward 16 Morta conflicts with GNN listing Morta under ward 50. Raw source names are preserved in each feature's `sourceName`.
+- `GET /api/jurisdictions` reports `partial_2022_sbm_unverified` with coverage and sources.
+- `GET /api/jurisdictions/lookup?lat=28.67&lon=77.42` returns a matched ward as an unverified hint (`WARD_MATCHED_UNVERIFIED_2022_SBM`) or fails closed (`WARD_NOT_IN_LOADED_BOUNDARIES`). It never echoes coordinates and never invents a ward.
+- Filing attaches the geoWard hint to the response with `officerRouting: 'manual_only'`; complaints still go to Routing Review, `routeVerified:0`. Polygons cannot prove current boundaries, GPS authenticity, or officer authority.
+- Limits: 2022 vintage (delimitation may have changed), 6 wards missing, not a GNN export, original government data has no explicit license beyond the CC0 redistribution terms.
+- Existing complaints and configured routes are preserved. Old seeded Lucknow routes are ignored by default rather than deleting records. `DEMO_ROUTES=true npm start` is only the old demo compatibility option; do not use it to claim Ghaziabad routing.
+- Rejected sources (detail in `data/ghaziabad/provenance.json`): DataMeet has no Ghaziabad dataset; LGD directory is CAPTCHA-gated and tabular only; Esri LivingAtlas layer conflicts with GNN numbering and has blank licenseInfo; GDA GIS is development-scheme only; OSM ward coverage unverified.
+- Needed next: current official GNN ward polygons with effective date and reuse terms, plus an independently authorized ward/category-to-officer registry, before geographic lookup or officer routing can be treated as verified.
+
+Exact source findings are in `data/ghaziabad/provenance.json`.
+
+## Local additions, 13 October 2026
+
+- `GET /api/translations`: common en/hi strings and honest translation coverage. Regional languages/UI remain pending.
+- `GET /api/stats/predictive-risk`: supervisor-only history heuristic, no trained model, no failure probability, no automated dispatch.
+- `GET /api/privacy`, `POST /api/privacy/retention`: policy and supervisor retention sweep; also runs each minute and at startup. No removal of active unresolved evidence.
+- CORS is closed by default. Set `CORS_ORIGINS` to exact comma-separated trusted origins. Responses use no-store, nosniff and no-referrer. TLS, distributed rate limits, storage quotas and broader production controls remain pending.
+- Impact units must match litres / hours / INR for water loss / road closure / repair cost. Entries are officer-reported, not measured baseline or causal impact.
+
+### Optional local AI review signal
+
+Setup, one command: `npm run setup:detector`. It downloads the checksum-pinned (SHA-256) Apache-2.0 model weights (about 83 MB) into `models/` (git-ignored, never committed) and verifies them. Restart the server: the detector turns ON automatically when `models/ai-image-detection.onnx` exists (or `AI_MODEL_PATH` points to a file). Without weights it stays `not_connected`; `AI_DETECTOR=off` forces it off. Check `GET /api/capabilities`. Runtime inference uses local CPU only and never sends citizen images to an external API. Missing/bad model and concurrent work fail closed to human review.
+
+Attribution and version are in `docs/model-provenance.json`; original model card is in `docs/AI_MODEL_CARD.md`. The model uses CIFAKE-trained ViT from Google/dima806/CapCheck, converted by ONNX Community. The score is a softmax model output, not a calibrated probability or proof of authenticity. No accuracy claim on CivicSync photos is available. Bilinear 224x224 RGB preprocessing follows the model configuration, but quantization/domain/compression effects remain unevaluated. Never auto-reject complaints using it.
+
+Source: https://huggingface.co/onnx-community/ai-image-detection-ONNX . Evidence on dataset/compression bias: https://arxiv.org/html/2403.17608 .
+
+Phone number: citizens may give an Indian mobile number when filing (`phone`, optional) or via `POST /api/me/phone`. It is saved on the user record, format-checked only (10 digits, optional +91), and is NOT verified: no OTP, no SMS is sent and no SMS provider is connected. It never appears in public tracking, complaint detail, audit or logs. The supervisor or the assigned officer can read it with `GET /api/complaints/:id/contact` (each read is audited without the number). Aadhaar is out of scope at user request.
+
+### Phone number (saved, unverified)
+
+Phone-only signup/login, recovery and number ownership checks are not implemented. The earlier OTP/Twilio code was removed.
+
+## Latest free/local completion pass
+
+- Read-only Ghaziabad officer hints: reviewer/supervisor `GET /api/jurisdictions/officer-hints?ward=38`. AE lists cover 100 wards; JE lists 56. Names only, no phone numbers or account bindings. All remain unverified and manual-review-only. Source A/ए numbering may not match 2022 polygons. Multiple zones are retained, not guessed.
+- Local labelled-photo evaluation: `node scripts/evaluate-detector.cjs /private/photos/manifest.json`. No real civic accuracy result exists yet.
+- 66 automated tests pass with checksum-pinned detector installed (synthetic model smoke is not accuracy testing).
+- Backend API only. Teammate frontend integration and live deployment are not verified.
+
+
+## Routing suggestions (read-only)
+
+A complaint in Routing Review shows reviewers/supervisors a `routingSuggestion`: ward (from the complaint's own text or an exact unique locality name), charter department/role, and staff names from the public Officer's List. It is unverified, never assigned, never creates accounts, and the `routes` table stays empty until a supervisor configures a route. Ambiguous or missing matches show no ward. Staff list re-checked 2026-10-14 (names, designations and wards only, no phone numbers).
+
+### Demo routes (demo mode only)
+
+With `DEMO_MODE=true DEMO_GHAZIABAD_ROUTES=true` (the `npm run demo` script sets both) the routes table is filled for wards with a single zone entry on the official page and categories with one charter department (Garbage, Streetlights, Roads, Water, Parks). Key is the exact ward text `Ghaziabad Ward N`. Department is labelled `DEMO - <dept> (not real Ghaziabad staff)`, officer is the demo account `verma`, supervisor is `supervisor`, `verified` stays 0. Off by default. Multi-zone wards, Drainage and Other still go to Routing Review. Not real Ghaziabad staff or assignments.

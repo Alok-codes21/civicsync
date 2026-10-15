@@ -5,9 +5,8 @@ const express = require('express')
 const path = require('path')
 const crypto = require('crypto')
 const Database = require('better-sqlite3')
-const { SEED, ESCALATION_LADDER, DEPARTMENTS } = require('./seed.cjs')
 
-const DB_PATH = path.join(__dirname, 'civicsync.db')
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'civicsync.db')
 const db = new Database(DB_PATH)
 db.pragma('journal_mode = WAL')
 
@@ -37,31 +36,6 @@ CREATE TABLE IF NOT EXISTS tokens (
 );
 `)
 
-/* ---------- seed once ---------- */
-const MONTHS = { Jan:0, Feb:1, Mar:2, Apr:3, May:4, Jun:5, Jul:6, Aug:7, Sep:8, Oct:9, Nov:10, Dec:11 }
-function parseDeadline(d) { // '8 Oct 2026'
-  const m = d.match(/(\d{1,2})\s+(\w+)\s+(\d{4})/)
-  return m ? new Date(+m[3], MONTHS[m[2]], +m[1], 23, 59, 59).getTime() : NaN
-}
-function parseSubmitted(s) { // '28 Sep 2026, 9:14 AM'
-  const m = s.match(/(\d{1,2})\s+(\w+)\s+(\d{4}),\s*(\d{1,2}):(\d{2})\s*(AM|PM)/)
-  if (!m) return Date.now()
-  let h = +m[4] % 12; if (m[6] === 'PM') h += 12
-  return new Date(+m[3], MONTHS[m[2]], +m[1], h, +m[5]).getTime()
-}
-if (db.prepare('SELECT COUNT(*) n FROM complaints').get().n === 0) {
-  const insC = db.prepare(`INSERT INTO complaints (id,title,category,description,ward,landmark,status,priority,submittedAt,submittedTs,deadline,deadlineTs,dept,officer,escalationLevel,latestUpdate)
-    VALUES (@id,@title,@category,@description,@ward,@landmark,@status,@priority,@submittedAt,@submittedTs,@deadline,@deadlineTs,@dept,@officer,@escalationLevel,@latestUpdate)`)
-  const insE = db.prepare('INSERT INTO events (complaintId,position,label,at,detail,kind) VALUES (?,?,?,?,?,?)')
-  const tx = db.transaction(() => {
-    for (const c of SEED) {
-      insC.run({ ...c, submittedTs: parseSubmitted(c.submittedAt), deadlineTs: parseDeadline(c.deadline), officer: c.officer ?? null })
-      c.timeline.forEach((e, i) => insE.run(c.id, i, e.label, e.at, e.detail ?? '', e.kind))
-    }
-  })
-  tx()
-  console.log('seeded', SEED.length, 'complaints')
-}
 /* ---------- password hashing (Node built-in crypto, no deps) ---------- */
 function hashPassword(pw) {
   const salt = crypto.randomBytes(16).toString('hex')
@@ -76,6 +50,22 @@ function verifyPassword(pw, stored) {
   return hash.length === expected.length && crypto.timingSafeEqual(hash, expected)
 }
 
+/* Async variant for login and signup: scrypt runs off the event loop so a burst of
+   login attempts cannot block other API requests. Sync verify stays for boot-time
+   migration/seeding only. */
+const scryptAsync = (pw, salt) => new Promise((resolve, reject) => crypto.scrypt(pw, salt, 64, (err, hash) => err ? reject(err) : resolve(hash)))
+async function verifyPasswordAsync(pw, stored) {
+  const parts = String(stored || '').split(':')
+  if (parts.length !== 3 || parts[0] !== 'scrypt') return false
+  const hash = await scryptAsync(String(pw), parts[1])
+  const expected = Buffer.from(parts[2], 'hex')
+  return hash.length === expected.length && crypto.timingSafeEqual(hash, expected)
+}
+
+/* Bearer tokens are stored as SHA-256 hashes: a database copy alone cannot be
+   replayed as a live session. The raw token is only ever returned to the client. */
+const hashToken = t => crypto.createHash('sha256').update(t).digest('hex')
+
 /* ---------- migrate old DBs: plaintext password column -> scrypt passhash ---------- */
 {
   const cols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name)
@@ -88,82 +78,45 @@ function verifyPassword(pw, stored) {
   }
 }
 
-if (db.prepare('SELECT COUNT(*) n FROM users').get().n === 0) {
-  const insU = db.prepare('INSERT INTO users VALUES (?,?,?,?)')
-  insU.run('alok', hashPassword('demo123'), 'Alok (Citizen, Gomti Nagar)', 'citizen')
-  insU.run('verma', hashPassword('demo123'), 'R. Verma - JE, Zone 4', 'official')
-  console.log('seeded demo users (scrypt-hashed passwords)')
-}
+/* migrate legacy plaintext bearer tokens to hashed storage; sessions stay valid */
+for (const row of db.prepare('SELECT token FROM tokens').all())
+  if (!/^[0-9a-f]{64}$/.test(row.token)) db.prepare('UPDATE tokens SET token=? WHERE token=?').run(hashToken(row.token), row.token)
 
-/* ---------- auto-escalation engine (real, time-based) ---------- */
-const LADDER_NAMES = ['Ward Officer', 'Zonal Officer', 'Municipal Commissioner']
-function sweep(now = Date.now()) {
-  const rows = db.prepare("SELECT * FROM complaints WHERE status != 'Resolved'").all()
-  const upd = db.prepare('UPDATE complaints SET escalationLevel=?, status=?, latestUpdate=? WHERE id=?')
-  const insE = db.prepare('INSERT INTO events (complaintId,position,label,at,detail,kind) VALUES (?,?,?,?,?,?)')
-  const changes = []
-  for (const c of rows) {
-    if (!c.deadlineTs || now <= c.deadlineTs) continue
-    const daysOver = Math.floor((now - c.deadlineTs) / 86400000)
-    const level = daysOver >= 7 ? 3 : daysOver >= 2 ? 2 : 1
-    if (level > c.escalationLevel) {
-      const status = level === 1 ? 'Overdue' : 'Escalated'
-      const auth = LADDER_NAMES[level - 1]
-      const upd_txt = `Escalated to ${auth} (L${level}) - deadline missed by ${daysOver} day${daysOver === 1 ? '' : 's'}.`
-      upd.run(level, status, upd_txt, c.id)
-      const pos = db.prepare('SELECT COUNT(*) n FROM events WHERE complaintId=?').get(c.id).n
-      insE.run(c.id, pos, `Escalated to ${auth}`, 'Just now', `Level ${level} escalation, auto-triggered by deadline engine.`, 'current')
-      changes.push({ id: c.id, level, status })
-    }
-  }
-  return changes
-}
-setInterval(() => {
-  sweep()
-  db.prepare('DELETE FROM tokens WHERE createdTs < ?').run(Date.now() - 12 * 60 * 60 * 1000)
-}, 60 * 1000).unref()
-
-/* ---------- helpers ---------- */
-const OFFICERS = {
-  'Road Department': 'R. Verma (JE)', 'Jal Nigam': 'A. Khan (JE Water Works)',
-  'Nagar Nigam - Drainage': 'M. Prasad (JE)', 'Sanitation Department': 'K. Singh (Sanitation Supervisor)',
-  'Electricity Board': 'S. Yadav (Lineman)', 'Parks Department': 'P. Nigam (Supervisor)', 'Ward Office': 'Ward Officer (in-charge)',
-}
 const PRIORITY_DAYS = { Critical: 2, High: 5, Medium: 7, Low: 10 }
-function fmtDate(ts) {
-  return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Calcutta' })
-}
-function fmtTs(ts) {
-  const d = new Date(ts)
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Asia/Calcutta' }) + ', ' +
-    d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Calcutta' })
-}
-function toComplaint(c) {
-  const timeline = db.prepare('SELECT label,at,detail,kind FROM events WHERE complaintId=? ORDER BY position').all(c.id)
-  const { submittedTs, deadlineTs, ...rest } = c
-  return { ...rest, escalationLevel: c.escalationLevel, timeline }
-}
-function nextId() {
-  const year = new Date().getFullYear()
-  const row = db.prepare("SELECT id FROM complaints WHERE id LIKE ? ORDER BY id DESC LIMIT 1").get(`SHG-${year}-%`)
-  const n = row ? parseInt(row.id.split('-')[2], 10) + 1 : 1000
-  return `SHG-${year}-${n}`
-}
+function fmtDate(ts) { return new Date(ts).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric', timeZone:'Asia/Calcutta' }) }
+function fmtTs(ts) { return new Date(ts).toISOString() }
+const workflows = require('./workflows.cjs')({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS })
+const { sweep, retention } = workflows
+require('./detector.cjs').load()
+const sweepTimer = setInterval(() => {
+  sweep()
+  retention()
+  db.prepare('DELETE FROM tokens WHERE createdTs < ?').run(Date.now() - 12 * 60 * 60 * 1000)
+}, 60000)
+sweepTimer.unref()
 
 /* ---------- app ---------- */
 const app = express()
-app.use(express.json({ limit: '1mb' }))
-app.use((req, res, next) => { res.setHeader('Access-Control-Allow-Origin', '*'); res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS'); if (req.method === 'OPTIONS') return res.sendStatus(204); next() })
+app.use(express.json({ limit: '6mb' }))
+app.use((req,res,next)=>{
+ res.set('Cache-Control','no-store').set('X-Content-Type-Options','nosniff').set('Referrer-Policy','no-referrer')
+ const origin=req.headers.origin,allowed=(process.env.CORS_ORIGINS||'').split(',').filter(Boolean)
+ if(origin&&allowed.includes(origin)){res.set('Access-Control-Allow-Origin',origin).set('Vary','Origin').set('Access-Control-Allow-Headers','Content-Type, Authorization, Idempotency-Key').set('Access-Control-Allow-Methods','GET,POST,OPTIONS')}
+ if(req.method==='OPTIONS')return res.sendStatus(origin&&!allowed.includes(origin)?403:204)
+ next()
+})
+app.use(require('./i18n.cjs').middleware)
+
 
 const TOKEN_TTL_MS = 12 * 60 * 60 * 1000 // sessions expire after 12 hours
 function authUser(req) {
   const h = req.headers.authorization || ''
   const tok = h.startsWith('Bearer ') ? h.slice(7) : null
   if (!tok) return null
-  const row = db.prepare('SELECT t.createdTs, u.username,u.name,u.role FROM tokens t JOIN users u ON u.username=t.username WHERE t.token=?').get(tok)
+  const row = db.prepare('SELECT t.createdTs, u.username,u.name,u.role FROM tokens t JOIN users u ON u.username=t.username WHERE t.token=?').get(hashToken(tok))
   if (!row) return null
   if (Date.now() - row.createdTs > TOKEN_TTL_MS) {
-    db.prepare('DELETE FROM tokens WHERE token=?').run(tok)
+    db.prepare('DELETE FROM tokens WHERE token=?').run(hashToken(tok))
     return null // expired token -> 401 downstream
   }
   return { username: row.username, name: row.name, role: row.role }
@@ -171,14 +124,33 @@ function authUser(req) {
 
 app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now() }))
 
-/* login rate limiting: max 5 failed attempts per IP+username per 10 minutes (in-memory, resets on restart) */
+/* login rate limiting: max 5 failed attempts per IP+username per 10 minutes.
+   In-memory and bounded (oldest keys evicted past LOGIN_FAILURE_MAP_MAX); limits
+   reset on restart - fine for this prototype, not sufficient for public deployment. */
 const LOGIN_WINDOW_MS = 10 * 60 * 1000
 const LOGIN_MAX_FAILURES = 5
+const LOGIN_FAILURE_MAP_MAX = 1000
+const LOGIN_USERNAME_MAX = 64
+const LOGIN_PASSWORD_MAX = 128
 const loginFailures = new Map() // key "ip|username" -> array of failure timestamps
+function recordFailure(key, now) {
+  const recent = (loginFailures.get(key) || []).filter(ts => now - ts < LOGIN_WINDOW_MS)
+  recent.push(now)
+  if (!loginFailures.has(key) && loginFailures.size >= LOGIN_FAILURE_MAP_MAX)
+    for (const old of loginFailures.keys()) { loginFailures.delete(old); if (loginFailures.size < LOGIN_FAILURE_MAP_MAX) break }
+  loginFailures.set(key, recent)
+}
 
-app.post('/api/login', (req, res) => {
+const signupAttempts = require('./signup.cjs').mount({ app, db, scryptAsync, hashToken })
+
+app.post('/api/login', async (req, res) => {
   const { username, password } = req.body || {}
-  const uname = String(username || '').toLowerCase()
+  // Type and length validated BEFORE any hashing: oversized input never reaches scrypt.
+  if (typeof username !== 'string' || typeof password !== 'string' ||
+      !username.length || username.length > LOGIN_USERNAME_MAX ||
+      !password.length || password.length > LOGIN_PASSWORD_MAX)
+    return res.status(400).json({ error: 'Username and password must be text within length limits' })
+  const uname = username.toLowerCase()
   const key = `${req.ip || req.socket.remoteAddress || 'unknown'}|${uname}`
   const now = Date.now()
   const recent = (loginFailures.get(key) || []).filter(ts => now - ts < LOGIN_WINDOW_MS)
@@ -189,103 +161,31 @@ app.post('/api/login', (req, res) => {
     return res.status(429).json({ error: `Too many failed login attempts. Try again in ${Math.ceil(retryAfterSec / 60)} minute(s).`, retryAfterSec })
   }
   const u = db.prepare('SELECT * FROM users WHERE username=?').get(uname)
-  if (!u || !verifyPassword(password, u.passhash)) {
-    recent.push(now)
-    loginFailures.set(key, recent)
+  if (!u || !(await verifyPasswordAsync(password, u.passhash))) {
+    recordFailure(key, now)
     return res.status(401).json({ error: 'Invalid username or password' })
   }
   loginFailures.delete(key)
   const token = crypto.randomBytes(24).toString('hex')
-  db.prepare('INSERT INTO tokens VALUES (?,?,?)').run(token, u.username, now)
+  db.prepare('INSERT INTO tokens VALUES (?,?,?)').run(hashToken(token), u.username, now)
   res.json({ token, user: { username: u.username, name: u.name, role: u.role } })
 })
 app.post('/api/logout', (req, res) => {
   const h = req.headers.authorization || ''
-  if (h.startsWith('Bearer ')) db.prepare('DELETE FROM tokens WHERE token=?').run(h.slice(7))
+  if (h.startsWith('Bearer ')) db.prepare('DELETE FROM tokens WHERE token=?').run(hashToken(h.slice(7)))
   res.json({ ok: true })
 })
 app.get('/api/me', (req, res) => { const u = authUser(req); if (!u) return res.status(401).json({ error: 'not logged in' }); res.json({ user: u }) })
 
-app.get('/api/complaints', (req, res) => {
-  sweep()
-  const { status, q } = req.query
-  let rows = db.prepare('SELECT * FROM complaints ORDER BY submittedTs DESC').all()
-  if (status && status !== 'all') rows = rows.filter(r => r.status === status)
-  if (q) { const s = String(q).toLowerCase(); rows = rows.filter(r => (r.id + ' ' + r.title + ' ' + r.category + ' ' + r.ward).toLowerCase().includes(s)) }
-  res.json({ complaints: rows.map(toComplaint) })
+// Phone numbers: saved unverified on users.phone, format-checked only. No OTP/SMS.
+require('./phone.cjs').mount({app,db,authUser})
+workflows.mount(app, authUser)
+app.use((err, req, res, next) => {
+  if (err.status || err.type === 'entity.too.large') return res.status(err.status || 413).json({ error:'Invalid or oversized request' })
+  console.error(err)
+  res.status(500).json({ error:'Internal server error' })
 })
-
-app.get('/api/complaints/:id', (req, res) => {
-  sweep()
-  const c = db.prepare('SELECT * FROM complaints WHERE id=?').get(String(req.params.id).toUpperCase())
-  if (!c) return res.status(404).json({ error: 'Complaint not found' })
-  res.json({ complaint: toComplaint(c) })
-})
-
-app.post('/api/complaints', (req, res) => {
-  const { title, category, description, ward, landmark, priority } = req.body || {}
-  if (!title || !category || !description || !ward) return res.status(400).json({ error: 'title, category, description and ward are required' })
-  const user = authUser(req)
-  const now = Date.now()
-  const days = PRIORITY_DAYS[priority] ?? 7
-  const dept = DEPARTMENTS[category] || 'Ward Office'
-  const id = nextId()
-  const c = {
-    id, title: String(title).slice(0, 140), category, description: String(description).slice(0, 2000),
-    ward, landmark: String(landmark || ''), status: 'Assigned', priority: priority || 'Medium',
-    submittedAt: fmtTs(now), submittedTs: now,
-    deadline: fmtDate(now + days * 86400000), deadlineTs: new Date(new Date(now + days * 86400000).setHours(23, 59, 59)).getTime(),
-    dept, officer: OFFICERS[dept] || 'Ward Officer (in-charge)', escalationLevel: 0,
-    latestUpdate: `Auto-assigned to ${dept}.`, author: user ? user.username : '',
-  }
-  db.prepare(`INSERT INTO complaints (id,title,category,description,ward,landmark,status,priority,submittedAt,submittedTs,deadline,deadlineTs,dept,officer,escalationLevel,latestUpdate,author)
-    VALUES (@id,@title,@category,@description,@ward,@landmark,@status,@priority,@submittedAt,@submittedTs,@deadline,@deadlineTs,@dept,@officer,@escalationLevel,@latestUpdate,@author)`).run(c)
-  const insE = db.prepare('INSERT INTO events (complaintId,position,label,at,detail,kind) VALUES (?,?,?,?,?,?)')
-  insE.run(id, 0, 'Complaint submitted', 'Just now', 'Reported with photo and GPS tag.', 'done')
-  insE.run(id, 1, `Assigned to ${dept}`, 'Just now', `Auto-assigned to ${c.officer}. Deadline: ${c.deadline}.`, 'current')
-  insE.run(id, 2, 'Assignment acknowledged', 'Pending', '', 'pending')
-  res.status(201).json({ complaint: toComplaint(db.prepare('SELECT * FROM complaints WHERE id=?').get(id)), acknowledgementNumber: id })
-})
-
-app.post('/api/complaints/:id/status', (req, res) => {
-  const user = authUser(req)
-  const c = db.prepare('SELECT * FROM complaints WHERE id=?').get(req.params.id)
-  if (!c) return res.status(404).json({ error: 'Complaint not found' })
-  const { status, note } = req.body || {}
-  const allowed = ['Submitted', 'Assigned', 'In Progress', 'Resolved', 'Reopened']
-  if (!allowed.includes(status)) return res.status(400).json({ error: 'invalid status' })
-  if (status !== 'Reopened' && (!user || user.role !== 'official')) return res.status(403).json({ error: 'official login required' })
-  if (status === 'Reopened' && !user) return res.status(403).json({ error: 'login required' })
-  db.prepare('UPDATE complaints SET status=?, latestUpdate=? WHERE id=?').run(status, note || `Status changed to ${status}.`, c.id)
-  const pos = db.prepare('SELECT COUNT(*) n FROM events WHERE complaintId=?').get(c.id).n
-  db.prepare('INSERT INTO events (complaintId,position,label,at,detail,kind) VALUES (?,?,?,?,?,?)')
-    .run(c.id, pos, `Status: ${status}`, 'Just now', note ? String(note).slice(0, 500) : `Marked ${status} by ${user ? user.name : 'citizen report'}.`, status === 'Resolved' ? 'done' : 'current')
-  res.json({ complaint: toComplaint(db.prepare('SELECT * FROM complaints WHERE id=?').get(c.id)) })
-})
-
-app.post('/api/complaints/:id/events', (req, res) => {
-  const c = db.prepare('SELECT * FROM complaints WHERE id=?').get(req.params.id)
-  if (!c) return res.status(404).json({ error: 'Complaint not found' })
-  const { label, detail, kind } = req.body || {}
-  if (!label) return res.status(400).json({ error: 'label required' })
-  const pos = db.prepare('SELECT COUNT(*) n FROM events WHERE complaintId=?').get(c.id).n
-  db.prepare('INSERT INTO events (complaintId,position,label,at,detail,kind) VALUES (?,?,?,?,?,?)')
-    .run(c.id, pos, String(label).slice(0, 120), 'Just now', String(detail || ''), ['done', 'current', 'alert', 'pending'].includes(kind) ? kind : 'done')
-  db.prepare('UPDATE complaints SET latestUpdate=? WHERE id=?').run(detail || label, c.id)
-  res.json({ complaint: toComplaint(db.prepare('SELECT * FROM complaints WHERE id=?').get(c.id)) })
-})
-
-app.get('/api/stats/public', (req, res) => {
-  sweep()
-  const rows = db.prepare('SELECT status, deadlineTs FROM complaints').all()
-  const total = rows.length, resolved = rows.filter(r => r.status === 'Resolved').length
-  const overdue = rows.filter(r => r.status === 'Overdue').length
-  const escalated = rows.filter(r => r.status === 'Escalated').length
-  res.json({ total, resolved, pending: total - resolved, overdue, escalated })
-})
-
-/* API-only: everything outside /api gets a JSON 404 */
-app.use((req, res) => res.status(404).json({ error: 'Not found - this server is API-only (see /api/health)' }))
-
+app.use((req, res) => res.status(404).json({ error:'Not found - this server is API-only' }))
 const PORT = process.env.PORT || 3001
-app.listen(PORT, () => { sweep(); console.log(`CivicSync backend on http://127.0.0.1:${PORT}`) })
+if (require.main === module) app.listen(PORT, process.env.HOST || '127.0.0.1', () => { sweep(); retention(); console.log(`CivicSync backend on http://127.0.0.1:${PORT}`) })
+module.exports = { app, db, sweep, retention, _loginFailures: loginFailures, _signupAttempts: signupAttempts, stop: () => { clearInterval(sweepTimer); db.close() } }
