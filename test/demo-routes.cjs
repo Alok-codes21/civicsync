@@ -31,6 +31,6 @@ test('seeded route assigns the demo account, flagged unverified, never shown as 
 })
 test('flag is off by default: no routes without DEMO_GHAZIABAD_ROUTES',()=>{
  const {spawnSync}=require('child_process')
- const r=spawnSync(process.execPath,['-e',"process.env.DEMO_MODE='true';process.env.DB_PATH=':memory:';delete process.env.DEMO_GHAZIABAD_ROUTES;const {db,stop}=require('./server/index.cjs');console.log(db.prepare('SELECT count(*) n FROM routes').get().n);stop()"],{cwd:require('path').join(__dirname,'..'),encoding:'utf8'})
+ const r=spawnSync(process.execPath,['-e',"process.env.DEMO_MODE='true';process.env.DB_PATH=':memory:';delete process.env.DEMO_GHAZIABAD_ROUTES;const {db,stop}=require('./server/index.cjs');process.stdout.write(String(db.prepare('SELECT count(*) n FROM routes').get().n));stop()"],{cwd:require('path').join(__dirname,'..'),encoding:'utf8'})
  assert.equal(r.stdout.trim(),'0')
 })

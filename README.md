@@ -1,6 +1,6 @@
 # CivicSync backend v2 - local prototype workflows
 
-API-only Node/Express/SQLite backend. No frontend, paid API, SMS, Aadhaar, municipal connection or deployment is included. An optional local-only image model is available as an unvalidated review signal. No fake photo/GPS/verification claims are inserted. This feature branch is a breaking API update and has not been merged.
+API-only Node/Express/SQLite backend. No frontend, paid API, SMS, Aadhaar, municipal connection or deployment is included. An optional local-only image model is available as an unvalidated review signal. No fake photo/GPS/verification claims are inserted. This API includes authenticated civic workflows; existing route names remain, but legacy unauthenticated writes are disabled.
 
 ## Run and test
 
@@ -181,3 +181,62 @@ A complaint in Routing Review shows reviewers/supervisors a `routingSuggestion`:
 ### Demo routes (demo mode only)
 
 With `DEMO_MODE=true DEMO_GHAZIABAD_ROUTES=true` (the `npm run demo` script sets both) the routes table is filled for wards with a single zone entry on the official page and categories with one charter department (Garbage, Streetlights, Roads, Water, Parks). Key is the exact ward text `Ghaziabad Ward N`. Department is labelled `DEMO - <dept> (not real Ghaziabad staff)`, officer is the demo account `verma`, supervisor is `supervisor`, `verified` stays 0. Off by default. Multi-zone wards, Drainage and Other still go to Routing Review. Not real Ghaziabad staff or assignments.
+
+## Private evidence trust signals (review aids only)
+
+**Evidence signals are review aids. They do not prove image authenticity, GPS accuracy, capture time, physical repair, or municipal authority.**
+
+This remains the same Express + SQLite backend. No external image upload, paid API, cloud inference, facial recognition, SMS or Aadhaar is used. Existing evidence download permissions, repair/closure roles and 90-day resolved-evidence retention remain in place. All trust levels return `decision: "human_review"` and `confidence: null`; none rejects, closes, resolves or advances a complaint. Malformed uploads and invalid capture sessions can fail validation; that does not reject the complaint. The existing independent human repair-verification workflow is separate from evidence review.
+
+### Capture sessions
+
+1. With a bearer token and complaint-member access, call `POST /api/complaints/:id/evidence-session` with `{}`.
+2. Response: `{sessionId, nonce, expiresAt}`. Both random values are 256-bit; `expiresAt` is an ISO timestamp exactly two minutes after server creation. Only SHA-256 hashes are stored, scoped to the issuing user and complaint. At most 20 unconsumed active sessions per account are allowed.
+3. Upload using the existing `POST /api/complaints/:id/evidence` body plus optional `sessionId` and `captureMethod: "live_camera"`. The optional `nonce` echo is checked when supplied. No nonce echo is required for older clients. A nonce is a challenge/integration hook, NOT device or camera attestation. Neither a session nor a matching hash proves the photo was taken during those two minutes.
+4. A supplied session must be active, unused and owned by the same user/complaint. **`live_camera` without a valid active session returns a clear HTTP 400**, not a silent downgrade. Gallery and web uploads without a session still work. Wrong, expired or reused supplied sessions also return 400. Retry with a new session, or omit it and declare `web_upload`.
+5. Validation happens before image decode and again inside the evidence-save transaction. Successful consumption, evidence insertion and audit events commit together. Failed uploads do not burn the session. Concurrent requests cannot consume it twice. Expired entries are removed on startup, session creation and the existing minute maintenance sweep; expiry is enforced at request/commit time even before cleanup. Consumed sessions remain unusable until expiry cleanup.
+
+Audit logs record session creation and successful consumption without raw session IDs, nonces, images, locations or integrity payloads. Review reasons are held in restricted review history, not copied into audit payloads.
+
+### Upload declarations and stored fields
+
+Existing `{stage, mime, base64, lat?, lon?, accuracy?, capturedTs?}` stays compatible. Optional additions:
+
+| Field | Values / meaning |
+|---|---|
+| `sessionId` | 64 lowercase hex characters from the session endpoint |
+| `captureMethod` | `live_camera`, `gallery`, `web_upload` (default `web_upload`) |
+| `clientImageSha256` | 64-character SHA-256 hex digest of **original uploaded bytes**, compared case-insensitively before Sharp re-encoding |
+| `deviceIntegrity` | `passed`, `failed`, `unavailable` (default `unavailable`), client-declared/unverified |
+| `integrityRequestHash` | Optional 64-character SHA-256 hex digest, stored privately as an unverified binding hook; no platform attestation service is connected |
+| `provenanceStatus` | `valid`, `absent`, `invalid`, `unsupported` (default `unsupported`), client-declared/unverified |
+
+Malformed optional values return 400. A well-formed mismatching client hash is accepted with `CLIENT_SHA256_MISMATCH` for review. `originalSha256` hashes original bytes, while the existing `sha` hashes the stored normalized bytes. The original file and raw EXIF are not retained. Original bytes are passed to `server/provenance.cjs` before metadata stripping. Existing MIME/signature/full decode/4 MB/16 million pixel limits, rate limits, normalized SHA-256, dHash and GPS/time validation remain. Missing complaint coordinates now produce `COMPLAINT_LOCATION_MISSING`, not a fabricated distance mismatch.
+
+New additive SQLite fields: `trustLevel`, `riskReasons` (JSON), `captureMethod`, `captureSessionUsed`, `deviceIntegrity`, `provenanceStatus`, `originalSha256`, `integrityRequestHash`, `c2paStatus`, `reviewDecision`, `reviewedBy`, `reviewedAt`. Old evidence keeps its bytes, normalized hash and existing reasons; it defaults to `needs_review`, with unknown original hash/reviewer data left null. No backfilled authenticity claim is made.
+
+### Deterministic review priority
+
+`server/evidence-trust.cjs` has the local scoring rules, not a trained risk model:
+
+- `high_risk`: SHA mismatch, exact normalized/original-byte reuse, non-flat dHash distance <=6 (at most 2,000 recent 90-day candidates), supplied photo location >150 m from the complaint location, reported capture >7 days old, declared invalid provenance or declared failed integrity. These are review priorities, not factual accusations. Missing/invalid/expired sessions stop the upload with 400; the pure scorer also maps invalid/expired session reason codes to high priority for integrations, but no failed upload is saved as evidence.
+- `needs_review`: missing or uncertain location/time/integrity, gallery/web capture without attestation, low-information images, unsupported C2PA or unavailable/uncalibrated AI signal. GPS and time remain client claims; implausible coordinate values and future capture time over five minutes still fail existing validation.
+- `low_risk`: no concerning or unresolved signals. This still requires human review and is not an authenticity badge. The current unsupported C2PA signal means actual uploads normally remain `needs_review` or `high_risk`.
+
+The optional ONNX score is uncalibrated, local-only and never independently creates high risk or a verification result. Missing weights still return `AI_DETECTOR_UNAVAILABLE` without blocking upload.
+
+### Reviewer decisions and privacy
+
+`POST /api/complaints/:id/evidence-review` still accepts `{decision, reason}` from the reviewer role. Decisions: `accepted_for_work`, `needs_reupload`, `needs_site_visit`; a reason of at least five characters is required. Optional `evidenceId` targets one evidence item and must belong to this complaint. Without it, the decision applies to all currently stored evidence (backward-compatible complaint-wide review). New uploads do not inherit earlier decisions. Latest reviewer/decision/time are saved per evidence; every decision and private reason remains in `reviewHistory` for complaint members. An append-only audit event records reviewer, decision, target and time without private reason text. `needs_reupload` does not block further uploads (existing quotas still apply).
+
+Public and unrelated-user tracking/list routes omit evidence, review history, trust/private reasons, integrity declarations and exact location. Raw evidence stays behind the existing member-only download route. New per-evidence fields are deleted with the evidence at retention; the pre-existing review/audit accountability records and backup caveats remain unchanged.
+
+### C2PA status: explicitly unsupported
+
+A current free local candidate, [`@contentauth/c2pa-node`](https://github.com/contentauth/c2pa-js/blob/main/packages/c2pa-node/README.md), was inspected and its 0.9.9 package installed in an isolated Linux check, not added to this project. It supports Node >=22, but introduces a native binary/install chain and settings capable of remote manifest/OCSP fetching. A safe offline-only validator, signed/invalid credential fixtures, trust-anchor policy and Windows Node 22/24 validation were not established for this change. Therefore no validator or extra runtime dependency is bundled, rather than pretending that declarations were validated.
+
+The integration point `inspectOriginal(bytes)` currently returns `{status: "unsupported", validated: false, signerSummary: null, actionSummary: null}`. `c2paStatus` is the server result, separate from the client's `provenanceStatus`. A future adapter must disable all network fetches, validate locally under an explicit trust policy, bound resource use, and retain only privacy-safe signer/action summaries, never manifest GPS/device/identity payloads. Absent C2PA must never imply a fake image. This version does not inspect EXIF GPS/time or verify device integrity.
+
+Tests: `npm test`. Added coverage includes session ownership/expiry/replay/concurrent consumption/transaction rollback, original-byte SHA mismatch, deterministic priorities, no automatic complaint transition, unavailable AI, public redaction, reviewer history/audit, retention and additive migration/restart. Tested on Linux Node 22 and 24; Windows has not been exercised here.
+
+The two subprocess count-output tests use plain string writes rather than colored numeric console formatting. `FORCE_COLOR=1 npm test` was also checked on Linux to cover the terminal-color failure; this is not a Windows execution claim.
