@@ -10,7 +10,26 @@ npm test
 DEMO_MODE=true npm start
 ```
 
-`HOST` defaults to loopback 127.0.0.1. `PORT` defaults to 3001. Node >=20.9.0 is required for patched sharp. `DB_PATH` overrides `server/civicsync.db`. Old complaint tables are migrated additively; existing records are preserved but their unsupported evidence claims are marked legacy/unverified. Fresh databases have no fictional complaint seed. Back up an existing database before upgrading. Tests use an isolated in-memory database, actual HTTP requests and a temporary legacy database.
+`HOST` defaults to loopback 127.0.0.1. `PORT` defaults to 3001. Use 64-bit Node 22.x or 24.x (tested locally with 22.23.3 and 24.21.0 on Linux). `DB_PATH` overrides `server/civicsync.db`. Old complaint tables are migrated additively; existing records are preserved but their unsupported evidence claims are marked legacy/unverified. Fresh databases have no fictional complaint seed. Back up an existing database before upgrading. Tests use an isolated in-memory database, actual HTTP requests and a temporary legacy database.
+
+### Windows PowerShell (Node 24, no C++ build tools)
+
+Download the ZIP from `feature/verified-civic-workflows`, extract it to a **new folder**, and open that folder in VS Code. Do not copy an old `node_modules` into it. In the VS Code terminal:
+
+```powershell
+node -v
+node -p "process.platform + ' ' + process.arch"
+npm ci
+npm test
+$env:DEMO_MODE="true"
+npm start
+```
+
+The checks should show Node `v24.x` (or `v22.x`) and `win32 x64` for a normal 64-bit Windows laptop. The API runs at `http://127.0.0.1:3001/api/health`. Stop it with Ctrl+C. Demo accounts are local examples only; see the limits below.
+
+`better-sqlite3` is deliberately pinned to **12.11.1**, not `latest`. Its release includes a Windows x64 / Node 24 (ABI 137) binary. Its explicit `prebuild-install` step downloads that binary without invoking a compiler when the download succeeds. Version 13.0.3 bundles binaries, but npm can still run its implicit `node-gyp rebuild` because it ships `binding.gyp`; on Windows that can require Visual Studio discovery even when a binary exists. Upgrading Node or installing Visual Studio is not needed for the supported prebuilt path.
+
+The prebuilt download needs access to GitHub release assets. If a proxy, firewall or antivirus blocks it, installation may still fall back to `node-gyp`. Keep the first download error and the output of the two checks above when reporting an install problem. Windows execution has not been tested here; the published Windows binary was downloaded and checked, and clean install, tests and server start were verified on Linux with Node 24.21.0. The deprecated `prebuild-install` warning is upstream tooling, not an install failure. Do not run `npm install better-sqlite3@latest`, which would replace the tested pin.
 
 ## Authentication and prototype limits
 
