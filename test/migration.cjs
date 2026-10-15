@@ -9,3 +9,9 @@ test('legacy DB migration and restart preserve records and audit chain',()=>{
  for(let i=0;i<2;i++){const x=spawnSync(process.execPath,['-e',script],{cwd:path.join(__dirname,'..'),env:{...process.env,DB_PATH:file,DEMO_MODE:'false'},encoding:'utf8'});assert.equal(x.status,0,x.stderr)}
  fs.rmSync(dir,{recursive:true,force:true})
 })
+test('existing evidence survives additive trust/session migration and restart without invented hashes',()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'civic-evidence-migration-')),file=path.join(dir,'legacy.db'),Database=require('better-sqlite3'),d=new Database(file)
+ d.exec(`CREATE TABLE evidence (id TEXT PRIMARY KEY, complaintId TEXT NOT NULL, actor TEXT NOT NULL, stage TEXT NOT NULL, mime TEXT NOT NULL, bytes BLOB NOT NULL, sha TEXT NOT NULL, ts INTEGER NOT NULL, capturedTs INTEGER, lat REAL, lon REAL, accuracy REAL, reasons TEXT NOT NULL); INSERT INTO evidence VALUES ('old-photo','old-complaint','old-owner','before','image/png',x'010203','old-normalized-hash',1,NULL,NULL,NULL,NULL,'["CAPTURE_TIME_MISSING"]');`);d.close()
+ const script=`const assert=require('node:assert/strict'),{db,stop}=require('./server/index.cjs');const e=db.prepare('SELECT * FROM evidence WHERE id=?').get('old-photo');assert.equal(e.bytes.toString('hex'),'010203');assert.equal(e.sha,'old-normalized-hash');assert.equal(e.originalSha256,null);assert.equal(e.trustLevel,'needs_review');assert.equal(e.reviewedAt,null);assert.equal(e.reasons,'["CAPTURE_TIME_MISSING"]');assert.equal(e.c2paStatus,'unsupported');assert.ok(db.prepare("SELECT name FROM sqlite_master WHERE name='evidence_sessions'").get());stop()`
+ try{for(let i=0;i<2;i++){const r=spawnSync(process.execPath,['-e',script],{cwd:path.join(__dirname,'..'),env:{...process.env,DB_PATH:file,DEMO_MODE:'false'},encoding:'utf8'});assert.equal(r.status,0,r.stderr)}}finally{fs.rmSync(dir,{recursive:true,force:true})}
+})

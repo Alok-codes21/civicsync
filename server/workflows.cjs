@@ -4,6 +4,8 @@ const crypto = require('crypto')
 const analytics = require('./analytics.cjs')
 const images = require('./images.cjs')
 const detector = require('./detector.cjs')
+const trust = require('./evidence-trust.cjs')
+const provenance = require('./provenance.cjs')
 const { DEPARTMENTS } = require('./seed.cjs')
 const jurisdiction = require('./jurisdiction.cjs')
 const DEMO_WARDS = ['Ward 12 - Gomti Nagar','Ward 8 - Aliganj','Ward 3 - Hazratganj']
@@ -34,6 +36,10 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
     CREATE TABLE IF NOT EXISTS impact (id INTEGER PRIMARY KEY, complaintId TEXT NOT NULL, actor TEXT NOT NULL, metric TEXT NOT NULL, value REAL NOT NULL, unit TEXT NOT NULL, note TEXT NOT NULL, ts INTEGER NOT NULL);
   `)
   for(const [name,type] of Object.entries({dhash:'TEXT',lowInformation:'INTEGER DEFAULT 0'})) if(!db.prepare('PRAGMA table_info(evidence)').all().some(c=>c.name===name)) db.exec(`ALTER TABLE evidence ADD COLUMN ${name} ${type}`)
+  const evidenceColumns={trustLevel:"TEXT NOT NULL DEFAULT 'needs_review'",riskReasons:"TEXT NOT NULL DEFAULT '[]'",captureMethod:"TEXT NOT NULL DEFAULT 'web_upload'",captureSessionUsed:'INTEGER NOT NULL DEFAULT 0',deviceIntegrity:"TEXT NOT NULL DEFAULT 'unavailable'",provenanceStatus:"TEXT NOT NULL DEFAULT 'unsupported'",originalSha256:'TEXT',integrityRequestHash:'TEXT',c2paStatus:"TEXT NOT NULL DEFAULT 'unsupported'",reviewDecision:'TEXT',reviewedBy:'TEXT',reviewedAt:'INTEGER'}
+  for(const [name,type] of Object.entries(evidenceColumns))if(!db.prepare('PRAGMA table_info(evidence)').all().some(c=>c.name===name))db.exec(`ALTER TABLE evidence ADD COLUMN ${name} ${type}`)
+  if(!db.prepare('PRAGMA table_info(reviews)').all().some(c=>c.name==='evidenceId'))db.exec('ALTER TABLE reviews ADD COLUMN evidenceId TEXT')
+  const sessions=require('./evidence-sessions.cjs')({db,audit,fail})
   db.exec(`CREATE TABLE IF NOT EXISTS intake_keys(actor TEXT,key TEXT,digest TEXT,complaintId TEXT,PRIMARY KEY(actor,key));`)
   db.exec('UPDATE complaints SET originalDeadlineTs=deadlineTs WHERE originalDeadlineTs IS NULL; UPDATE complaints SET issueId=id WHERE issueId IS NULL;')
   // Mark legacy records as unverified. Preserve their text only in the restricted legacy timeline.
@@ -94,7 +100,7 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
     if(!member(u,c)) return {...base,latestUpdate:`${c.status}. Public tracking omits private complaint details.`,timeline:[]}
     const {submittedTs,deadlineTs,...rest}=c
     const suggestion=c.status==='Routing Review'&&['reviewer','supervisor'].includes(u.role)?{routingSuggestion:reference.suggestRoute(c)}:{}
-    return {...rest,...base,...suggestion,reasons:JSON.parse(c.reasons),severityReasons:JSON.parse(c.severityReasons),timeline:db.prepare('SELECT actor,action AS label,ts,beforeJson,afterJson FROM audit WHERE complaintId=? ORDER BY seq').all(c.id),evidence:db.prepare('SELECT id,stage,actor,mime,sha,ts,capturedTs,reasons FROM evidence WHERE complaintId=?').all(c.id).map(e=>({...e,reasons:JSON.parse(e.reasons)}))}
+    return {...rest,...base,...suggestion,reasons:JSON.parse(c.reasons),severityReasons:JSON.parse(c.severityReasons),timeline:db.prepare('SELECT actor,action AS label,ts,beforeJson,afterJson FROM audit WHERE complaintId=? ORDER BY seq').all(c.id),evidence:db.prepare('SELECT id,stage,actor,mime,sha,ts,capturedTs,reasons,trustLevel,riskReasons,captureMethod,captureSessionUsed,deviceIntegrity,provenanceStatus,originalSha256,c2paStatus,reviewDecision,reviewedBy,reviewedAt FROM evidence WHERE complaintId=?').all(c.id).map(e=>({...e,reasons:JSON.parse(e.reasons),riskReasons:JSON.parse(e.riskReasons),captureSessionUsed:Boolean(e.captureSessionUsed)})),reviewHistory:db.prepare('SELECT id,evidenceId,actor,decision,reason,ts FROM reviews WHERE complaintId=? ORDER BY id').all(c.id)}
   }
   function change(c,u,action,values,auditExtras={}) {
     const keys=Object.keys(values)
@@ -144,12 +150,13 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
      Legacy append-only audit rows and operator backups are outside this sweep's reach
      and remain flagged below for an operator policy. */
   function retention(now=Date.now()) {
+    sessions.cleanup(now)
     return db.transaction(()=>{const old=db.prepare("SELECT id FROM complaints WHERE status='Resolved' AND resolvedTs<? AND (lat IS NOT NULL OR description!='[retention redacted]' OR (author!='' AND author!='retention-redacted') OR ward!='[retention redacted]' OR latestUpdate!='[retention redacted]')").all(now-90*86400000);let removed=0;for(const c of old){removed+=db.prepare('DELETE FROM evidence WHERE complaintId=?').run(c.id).changes;db.prepare("UPDATE complaints SET lat=NULL,lon=NULL,accuracy=NULL,landmark='',description='[retention redacted]',title='[retention redacted]',ward='[retention redacted]',latestUpdate='[retention redacted]',author='retention-redacted' WHERE id=?").run(c.id)}if(old.length)audit('PRIVACY','system','Retention sweep',null,{complaints:old.length,evidenceRemoved:removed});return {complaintsRedacted:old.length,evidenceRemoved:removed,fieldsRedacted:['title','description','landmark','coordinates','ward','latestUpdate'],fieldsPseudonymized:['author'],retainedForAccountability:['category','priority','status history','officer','audit actors'],backups:'not_managed',historicalAudit:'append_only_legacy_PII_not_removed'}})()
   }
   function mount(app,authUser) {
     const route=(method,path,fn)=>app[method](path,(req,res,next)=>{try {const u=authUser(req); const body=req.body||{}; const result=db.transaction(()=>fn(req,u,body,res))(); if(!res.headersSent) res.json(result)} catch(e){if(e.status)res.status(e.status).json({error:e.message});else next(e)}})
     const complaint=req=>{const c=get(req.params.id);if(!c)fail(404,'Complaint not found');return c}
-    route('get','/api/capabilities',()=>({version:2,demoMode:process.env.DEMO_MODE==='true',identity:{phoneNumber:'saved_unverified_no_otp_no_sms',aadhaar:'out_of_scope'},imageDetection:detector.status(),imageSimilarity:'local_dhash_review_only',predictiveRisk:'history_heuristic_not_trained',offlineSync:'idempotent_authenticated_intake',retention:'resolved_evidence_90_days_and_pii_redaction',otpPrototype:'not_connected_no_free_SMS_rail',gps:'client_asserted_not_attested',jurisdictions:jurisdiction.status().status,municipality:'Ghaziabad',demoRoutes:process.env.DEMO_ROUTES==='true',languages:['en','hi'],assistedIntake:true,notifications:'internal_queue_only'}))
+    route('get','/api/capabilities',()=>({version:2,evidenceNotice:trust.NOTICE,evidenceTrust:{reviewOnly:true,captureSessionTTLSeconds:120,liveCameraWithoutSession:'400_error',deviceIntegrity:'client_declared_unverified',provenance:'unsupported_local_validator_not_bundled'},demoMode:process.env.DEMO_MODE==='true',identity:{phoneNumber:'saved_unverified_no_otp_no_sms',aadhaar:'out_of_scope'},imageDetection:detector.status(),imageSimilarity:'local_dhash_review_only',predictiveRisk:'history_heuristic_not_trained',offlineSync:'idempotent_authenticated_intake',retention:'resolved_evidence_90_days_and_pii_redaction',otpPrototype:'not_connected_no_free_SMS_rail',gps:'client_asserted_not_attested',jurisdictions:jurisdiction.status().status,municipality:'Ghaziabad',demoRoutes:process.env.DEMO_ROUTES==='true',languages:['en','hi'],assistedIntake:true,notifications:'internal_queue_only'}))
     route('get','/api/translations',(req)=>({languages:['en','hi'],strings:require('./i18n.cjs').strings,regionalLanguages:'not_translated',coverage:'common errors and acknowledgement only; English fallback disclosed'}))
     route('get','/api/jurisdictions',()=>jurisdiction.status())
     route('get','/api/jurisdictions/officer-hints',(req,u)=>{if(!['reviewer','supervisor'].includes(u?.role))fail(403,'Reviewer or supervisor required');return require('./officer-hints.cjs').lookup(Number(req.query.ward))})
@@ -217,6 +224,11 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
     route('post','/api/transfers/:id/accept',(req,u)=>{const t=db.prepare('SELECT * FROM transfers WHERE id=?').get(req.params.id);if(!t)fail(404,'Transfer not found');if(u?.username!==t.target)fail(403,'Target officer required');if(t.state!=='pending')fail(409,'Transfer not pending');const c=get(t.complaintId);db.prepare("UPDATE transfers SET state='accepted' WHERE id=?").run(t.id);return {complaint:serialize(change(c,u,'Transfer accepted',{officer:u.username,accepted:1}),u)}})
     route('post','/api/complaints/:id/extensions',(req,u,b)=>{const c=complaint(req);worker(u,c);const note=reason(b.reason);if(!Number.isSafeInteger(b.deadlineTs)||b.deadlineTs<=Math.max(c.deadlineTs,Date.now())||b.deadlineTs> Date.now()+30*86400000)fail(400,'Future deadline within 30 days required');if(db.prepare("SELECT 1 FROM extensions WHERE complaintId=? AND state='pending'").get(c.id))fail(409,'Extension pending');const x=db.prepare('INSERT INTO extensions(complaintId,requester,deadlineTs,reason) VALUES (?,?,?,?)').run(c.id,u.username,b.deadlineTs,note);audit(c.id,u.username,'Extension requested',null,{id:Number(x.lastInsertRowid),reason:note,deadlineTs:b.deadlineTs});return {extensionId:Number(x.lastInsertRowid),state:'pending'}})
     route('post','/api/extensions/:id/review',(req,u,b)=>{supervisor(u);const x=db.prepare('SELECT * FROM extensions WHERE id=?').get(req.params.id);if(!x)fail(404,'Extension not found');if(x.requester===u.username)fail(403,'Independent approval required');if(x.state!=='pending')fail(409,'Already reviewed');if(x.deadlineTs<=Date.now()&&b.decision==='approve')fail(409,'Requested extension is no longer in the future');if(!['approve','deny'].includes(b.decision))fail(400,'approve or deny required');const note=reason(b.reason);db.prepare('UPDATE extensions SET state=? WHERE id=?').run(b.decision,x.id);const c=get(x.complaintId);if(b.decision==='approve')change(c,u,'Extension approved',{deadlineTs:x.deadlineTs,deadline:fmtDate(x.deadlineTs),latestUpdate:note,status:['Overdue','Escalated'].includes(c.status)?'In Progress':c.status});else audit(c.id,u.username,'Extension denied',x,{reason:note});return {state:b.decision,complaint:serialize(get(c.id),u)}})
+    route('post','/api/complaints/:id/evidence-session',(req,u)=>{
+      if(!u)fail(401,'Login required')
+      const c=complaint(req);if(!member(u,c))fail(403,'Private evidence access required')
+      return sessions.create(c,u)
+    })
     /* Evidence upload, ordered so nothing expensive runs before every cheap check passes:
        authentication, complaint access, stage, officer role, declared MIME, base64 shape,
        encoded length, decoded byte size, file signature, per-user rate limit - and only
@@ -235,6 +247,10 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
         const u=authUser(req),c=get(req.params.id)
         if(!c||!member(u,c))return res.status(403).json({error:'Private evidence access required'})
         const b=req.body||{}
+        req.evidenceDeclarations=trust.declarations(b)
+        sessions.validate(b,c,u)
+        coordinates(b)
+        if(b.capturedTs!=null&&(!Number.isSafeInteger(b.capturedTs)||b.capturedTs>Date.now()+300000))fail(400,'Invalid capture time')
         if(!['before','after','dispute'].includes(b.stage))return res.status(400).json({error:'before, after or dispute required'})
         if(b.stage==='after'&&!(u&&(u.role==='supervisor'||u.role==='official'&&u.username===c.officer)))return res.status(403).json({error:'Assigned officer or supervisor required'})
         if(!['image/jpeg','image/png'].includes(b.mime)||typeof b.base64!=='string'||!/^[A-Za-z0-9+/]*={0,2}$/.test(b.base64)||b.base64.length>5600000)return res.status(400).json({error:'PNG/JPEG base64 required'})
@@ -242,12 +258,15 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
         const isPNG=raw.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])),isJPEG=raw[0]===255&&raw[1]===216&&raw[2]===255
         if(!(b.mime==='image/png'&&isPNG || b.mime==='image/jpeg'&&isJPEG))return res.status(400).json({error:'File signature mismatch'})
         if(!uploadAllowed(u.username))return res.status(429).json({error:'Too many uploads. Try again in a few minutes.'})
+        if(db.prepare('SELECT COUNT(*) n FROM evidence WHERE complaintId=?').get(c.id).n>=20)fail(429,'Maximum 20 evidence files per complaint')
+        req.originalSha256=crypto.createHash('sha256').update(raw).digest('hex')
+        req.provenanceSignal=await provenance.inspectOriginal(raw)
         const bytes=await images.reencode(raw) // controlled copy: re-encoded, metadata stripped
         req.imageBytes=bytes
         req.imageInfo=await images.inspect(bytes)
         req.aiSignal=await detector.predict(bytes)
         next()
-      }catch(e){res.status(400).json({error:'Image decode failed or pixel limit exceeded'})}
+      }catch(e){res.status(e.status||400).json({error:e.status?e.message:'Image decode failed or pixel limit exceeded'})}
     })
     route('post','/api/complaints/:id/evidence',(req,u,b,res)=>{
       // auth, access, stage, MIME, base64, byte size, signature and rate limit already
@@ -258,22 +277,44 @@ module.exports = ({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS }) => {
       const loc=coordinates(b),now=Date.now(),sha=crypto.createHash('sha256').update(bytes).digest('hex')
       const info=req.imageInfo
       const reasons=[req.aiSignal.reason,'EDIT_DETECTION_UNAVAILABLE','CAPTURE_METADATA_CLIENT_ASSERTED']
-      if(db.prepare('SELECT 1 FROM evidence WHERE sha=?').get(sha))reasons.push('EXACT_PHOTO_REUSED')
+      if(db.prepare('SELECT 1 FROM evidence WHERE sha=? OR originalSha256=?').get(sha,req.originalSha256))reasons.push('EXACT_PHOTO_REUSED')
       if(info.lowInformation)reasons.push('LOW_INFORMATION_IMAGE_SIMILARITY_UNRELIABLE')
       else if(db.prepare('SELECT dhash FROM evidence WHERE dhash IS NOT NULL AND lowInformation=0 AND ts>? ORDER BY ts DESC LIMIT 2000').all(now-90*86400000).some(e=>images.hamming(e.dhash,info.dhash)<=6))reasons.push('SIMILAR_PHOTO_REVIEW_REQUIRED')
-      if(loc.lat==null)reasons.push('PHOTO_LOCATION_MISSING');else if(metres(c,loc)>150)reasons.push('PHOTO_LOCATION_MISMATCH')
+      if(loc.lat==null)reasons.push('PHOTO_LOCATION_MISSING');else if(c.lat==null)reasons.push('COMPLAINT_LOCATION_MISSING');else if(metres(c,loc)>150)reasons.push('PHOTO_LOCATION_MISMATCH')
       if(loc.accuracy==null||loc.accuracy>100)reasons.push('LOCATION_ACCURACY_UNCERTAIN')
       if(b.capturedTs!=null&&(!Number.isSafeInteger(b.capturedTs)||b.capturedTs>now+300000))fail(400,'Invalid capture time')
       if(b.capturedTs==null)reasons.push('CAPTURE_TIME_MISSING');else if(now-b.capturedTs>7*86400000)reasons.push('OLD_PHOTO')
+      const declared=req.evidenceDeclarations
+      reasons.push('GPS_CLIENT_ASSERTED','DEVICE_INTEGRITY_CLIENT_ASSERTED','PROVENANCE_CLIENT_ASSERTED','C2PA_UNSUPPORTED')
+      if(b.clientImageSha256!==undefined&&b.clientImageSha256.toLowerCase()!==req.originalSha256)reasons.push('CLIENT_SHA256_MISMATCH')
+      if(declared.captureMethod==='gallery')reasons.push('GALLERY_UPLOAD_REVIEW_REQUIRED')
+      if(declared.captureMethod==='web_upload')reasons.push('WEB_UPLOAD_CAPTURE_UNATTESTED')
+      if(declared.deviceIntegrity==='failed')reasons.push('DECLARED_DEVICE_INTEGRITY_FAILED')
+      if(declared.deviceIntegrity==='unavailable')reasons.push('DEVICE_INTEGRITY_UNAVAILABLE')
+      if(declared.provenanceStatus==='invalid')reasons.push('DECLARED_PROVENANCE_INVALID')
+      if(b.integrityRequestHash!==undefined)reasons.push('INTEGRITY_REQUEST_HASH_UNVERIFIED')
+      const risk=trust.score(reasons),captureSessionUsed=sessions.consume(b,c,u)
       const id=crypto.randomUUID()
       db.prepare('INSERT INTO evidence(id,complaintId,actor,stage,mime,bytes,sha,ts,capturedTs,lat,lon,accuracy,reasons,dhash,lowInformation) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(id,c.id,u.username,b.stage,b.mime,bytes,sha,now,b.capturedTs??null,loc.lat,loc.lon,loc.accuracy,JSON.stringify(reasons),info.dhash,info.lowInformation?1:0)
+      db.prepare('UPDATE evidence SET trustLevel=?,riskReasons=?,captureMethod=?,captureSessionUsed=?,deviceIntegrity=?,provenanceStatus=?,originalSha256=?,integrityRequestHash=?,c2paStatus=? WHERE id=?').run(risk.trustLevel,JSON.stringify(risk.riskReasons),declared.captureMethod,captureSessionUsed?1:0,declared.deviceIntegrity,declared.provenanceStatus,req.originalSha256,b.integrityRequestHash?.toLowerCase()??null,req.provenanceSignal.status,id)
       const all=[...new Set([...JSON.parse(c.reasons),...reasons])];change(c,u,'Evidence received',{reasons:JSON.stringify(all)})
-      res.status(201);return {evidenceId:id,reasons,aiSignal:req.aiSignal,decision:'human_review',confidence:null,serverReceivedTs:now,notice:'Signals do not prove AI generation, GPS authenticity or capture time'}
+      res.status(201);return {evidenceId:id,reasons,...risk,captureMethod:declared.captureMethod,captureSessionUsed,provenanceSignal:req.provenanceSignal,aiSignal:req.aiSignal,serverReceivedTs:now,notice:trust.NOTICE}
     })
     app.get('/api/evidence/:id',(req,res)=>{const u=authUser(req),e=db.prepare('SELECT * FROM evidence WHERE id=?').get(req.params.id);if(!e)return res.status(404).json({error:'Evidence not found'});if(!member(u,get(e.complaintId)))return res.status(403).json({error:'Private evidence access required'});res.set('Content-Type',e.mime).set('Cache-Control','no-store').set('X-Content-Type-Options','nosniff').send(e.bytes)})
     route('post','/api/complaints/:id/repair',(req,u,b)=>{const c=complaint(req);worker(u,c);if(!c.accepted)fail(409,'Accept assignment first');if(['Resolved','Verification Pending'].includes(c.status))fail(409,'Repair cannot be submitted at this stage');const note=reason(b.note);const ev=currentEvidence(c.id);if(!ev.some(x=>x.stage==='before')||!ev.some(x=>x.stage==='after'&&x.actor===u.username))fail(409,'Current-cycle before evidence and your after evidence required');return {complaint:serialize(change(c,u,'Repair submitted',{status:'Verification Pending',repairActor:u.username,latestUpdate:note}),u),verification:'pending'}})
     route('post','/api/complaints/:id/verify',(req,u,b)=>{const c=complaint(req);if(c.status!=='Verification Pending')fail(409,'Repair verification not pending');if(!(u?.username===c.author||u?.role==='reviewer')||u.username===c.repairActor)fail(403,'Citizen owner or independent reviewer required');if(!['approve','dispute'].includes(b.decision))fail(400,'approve or dispute required');const note=reason(b.reason);db.prepare('INSERT INTO reviews(complaintId,actor,decision,reason,ts) VALUES (?,?,?,?,?)').run(c.id,u.username,b.decision,note,Date.now());const approved=b.decision==='approve';return {complaint:serialize(change(c,u,'Resolution '+b.decision,{status:approved?'Resolved':'In Progress',resolvedTs:approved?Date.now():null,latestUpdate:note},approved?{}:evidenceBoundary(c.id)),u),notice:'Human confirmation recorded; not independent physical attestation'}})
-    route('post','/api/complaints/:id/evidence-review',(req,u,b)=>{const c=complaint(req);if(u?.role!=='reviewer')fail(403,'Reviewer required');if(!['needs_reupload','accepted_for_work','needs_site_visit'].includes(b.decision))fail(400,'Invalid review decision');const note=reason(b.reason);db.prepare('INSERT INTO reviews(complaintId,actor,decision,reason,ts) VALUES (?,?,?,?,?)').run(c.id,u.username,b.decision,note,Date.now());audit(c.id,u.username,'Evidence reviewed',null,{decision:b.decision,reason:note});return {decision:b.decision,automaticRejection:false}})
+    route('post','/api/complaints/:id/evidence-review',(req,u,b)=>{
+      const c=complaint(req)
+      if(u?.role!=='reviewer')fail(403,'Reviewer required')
+      if(!['needs_reupload','accepted_for_work','needs_site_visit'].includes(b.decision))fail(400,'Invalid review decision')
+      const note=reason(b.reason),now=Date.now()
+      if(b.evidenceId!==undefined&&(typeof b.evidenceId!=='string'||!db.prepare('SELECT 1 FROM evidence WHERE id=? AND complaintId=?').get(b.evidenceId,c.id)))fail(400,'Evidence must belong to this complaint')
+      db.prepare('INSERT INTO reviews(complaintId,actor,decision,reason,ts,evidenceId) VALUES (?,?,?,?,?,?)').run(c.id,u.username,b.decision,note,now,b.evidenceId??null)
+      if(b.evidenceId)db.prepare('UPDATE evidence SET reviewDecision=?,reviewedBy=?,reviewedAt=? WHERE id=?').run(b.decision,u.username,now,b.evidenceId)
+      else db.prepare('UPDATE evidence SET reviewDecision=?,reviewedBy=?,reviewedAt=? WHERE complaintId=?').run(b.decision,u.username,now,c.id)
+      audit(c.id,u.username,'Evidence reviewed',null,{decision:b.decision,evidenceId:b.evidenceId??null,reviewedAt:now})
+      return {decision:b.decision,reviewedBy:u.username,reviewedAt:now,automaticRejection:false}
+    })
     route('post','/api/complaints/:id/priority',(req,u,b)=>{const c=complaint(req);supervisor(u);if(!Object.hasOwn(PRIORITY_DAYS,b.priority))fail(400,'Invalid priority');const note=reason(b.reason);const due=Math.min(c.deadlineTs,Date.now()+PRIORITY_DAYS[b.priority]*86400000);return {complaint:serialize(change(c,u,'Severity reviewed',{priority:b.priority,severityReasons:JSON.stringify(['HUMAN_REVIEW:'+note]),deadlineTs:due,deadline:fmtDate(due)}),u)}})
     route('post','/api/complaints/:id/link',(req,u,b)=>{const c=complaint(req);if(!['reviewer','supervisor'].includes(u?.role))fail(403,'Reviewer required');const target=get(b.target);if(!target||target.id===c.id||c.category!==target.category||c.ward!==target.ward||metres(c,target)>100)fail(400,'Same category and ward within 100m required');const note=reason(b.reason);const old=c.issueId;db.prepare('UPDATE complaints SET issueId=? WHERE issueId=?').run(target.issueId,old);audit(c.id,u.username,'Issue cluster linked',{issueId:old},{issueId:target.issueId,reason:note});return {issueId:target.issueId,complaintsPreserved:true}})
     route('get','/api/complaints/:id/related',(req,u)=>{const c=complaint(req);if(!member(u,c))fail(403,'Private access required');return {candidates:candidates(c).map(x=>({id:x.id,status:x.status,issueId:x.issueId})),recurrences:candidates(c).filter(x=>x.status==='Resolved'||x.reopenCount>0).length}})
