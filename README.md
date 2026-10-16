@@ -288,3 +288,9 @@ This pass exercised Node 22.23.3 only. The Node 24.21.0 Linux verification menti
 ## Account events (round 12)
 
 `POST /api/me/phone` (valid update) and `POST /api/logout` (only when a real token row is deleted) write a row to the `security_events` table: actor, action, timestamp. This is separate from the complaint audit hash chain and never stores the phone number, token or password. Login tokens now count as expired when their age is at or past 12 hours.
+
+## Round 13 behaviour notes
+
+- Approving a deadline extension marks the complaint's pending escalation tasks `superseded`; accepting one returns 409. If the complaint goes overdue again, the sweep reactivates the superseded task (with a new `Escalation L<n>` audit row) instead of silently skipping it.
+- `POST /api/complaints/:id/link` now returns 409 unless every complaint in the source cluster is within 100 m of some complaint in the target cluster. The audit row lists `movedComplaintIds`.
+- With `DEMO_MODE=true`, startup is refused when `HOST` is not loopback (public demo password `demo123`). Set `ALLOW_DEMO_ON_NETWORK=true` only for an intentional LAN demo. The check runs before any demo account is written.

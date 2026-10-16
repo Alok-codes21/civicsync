@@ -25,6 +25,12 @@ if (db.pragma('foreign_keys', { simple: true }) !== 1) console.warn('Startup war
 function parsePort(v) { if (v === undefined || v === '') return 3001; if (!/^\d{1,5}$/.test(v)) return null; const n = Number(v); return n >= 1 && n <= 65535 ? n : null }
 const PORT = parsePort(process.env.PORT)
 if (PORT === null) { console.error(`Startup error: PORT must be an integer between 1 and 65535 (got ${JSON.stringify(process.env.PORT)}).`); process.exit(1) }
+// Refuse before any demo account is seeded into the database.
+const LISTEN_HOST = process.env.HOST || '127.0.0.1'
+const LOOPBACK = h => h === 'localhost' || h === '::1' || /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(h)
+if (require.main === module && process.env.DEMO_MODE === 'true' && !LOOPBACK(LISTEN_HOST) && process.env.ALLOW_DEMO_ON_NETWORK !== 'true') {
+  console.error('Startup error: DEMO_MODE seeds public demo accounts (known password) and must not listen on a non-loopback HOST. Set ALLOW_DEMO_ON_NETWORK=true only for an intentional LAN demo.'); process.exit(1)
+}
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS complaints (
@@ -213,5 +219,5 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error:'Internal server error' })
 })
 app.use((req, res) => res.status(404).json({ error:'Not found - this server is API-only' }))
-if (require.main === module) app.listen(PORT, process.env.HOST || '127.0.0.1', () => { sweep(); retention(); console.log(`CivicSync backend on http://127.0.0.1:${PORT}`) })
+if (require.main === module) app.listen(PORT, LISTEN_HOST, () => { sweep(); retention(); console.log(`CivicSync backend on http://127.0.0.1:${PORT}`) })
 module.exports = { app, db, sweep, retention, _runMaintenance: runMaintenance, _loginFailures: loginFailures, _signupAttempts: signupAttempts, stop: () => { clearInterval(sweepTimer); db.close() } }
