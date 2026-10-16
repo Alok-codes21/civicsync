@@ -201,7 +201,7 @@ This remains the same Express + SQLite backend. No external image upload, paid A
 
 1. With a bearer token and complaint-member access, call `POST /api/complaints/:id/evidence-session` with `{}`.
 2. Response: `{sessionId, nonce, expiresAt}`. Both random values are 256-bit; `expiresAt` is an ISO timestamp exactly two minutes after server creation. Only SHA-256 hashes are stored, scoped to the issuing user and complaint. At most 20 unconsumed active sessions per account are allowed.
-3. Upload using the existing `POST /api/complaints/:id/evidence` body plus optional `sessionId` and `captureMethod: "live_camera"`. The optional `nonce` echo is checked when supplied. No nonce echo is required for older clients. A nonce is a challenge/integration hook, NOT device or camera attestation. Neither a session nor a matching hash proves the photo was taken during those two minutes.
+3. Upload using the existing `POST /api/complaints/:id/evidence` body plus optional `sessionId` and `captureMethod: "live_camera"`. When a `sessionId` is sent, the `nonce` from the session response must be sent back too (64 hex chars); a missing or wrong nonce returns 400 and does not consume the session. A request with no `sessionId` is unaffected. A nonce is a challenge/integration hook, NOT device or camera attestation. Neither a session nor a matching hash proves the photo was taken during those two minutes.
 4. A supplied session must be active, unused and owned by the same user/complaint. **`live_camera` without a valid active session returns a clear HTTP 400**, not a silent downgrade. Gallery and web uploads without a session still work. Wrong, expired or reused supplied sessions also return 400. Retry with a new session, or omit it and declare `web_upload`.
 5. Validation happens before image decode and again inside the evidence-save transaction. Successful consumption, evidence insertion and audit events commit together. Failed uploads do not burn the session. Concurrent requests cannot consume it twice. Expired entries are removed on startup, session creation and the existing minute maintenance sweep; expiry is enforced at request/commit time even before cleanup. Consumed sessions remain unusable until expiry cleanup.
 
@@ -283,3 +283,8 @@ Results below are from an actual fresh clone (no copied `node_modules`), not fro
 - `git status --short` after the runs: clean, no tracked files modified
 
 This pass exercised Node 22.23.3 only. The Node 24.21.0 Linux verification mentioned above predates this pass and was not re-run here; Windows execution remains untested. Reproduce with: `node --version && npm --version && node -p "process.platform + ' ' + process.arch" && npm ci && npm test && npm run demo && git status --short`.
+
+
+## Account events (round 12)
+
+`POST /api/me/phone` (valid update) and `POST /api/logout` (only when a real token row is deleted) write a row to the `security_events` table: actor, action, timestamp. This is separate from the complaint audit hash chain and never stores the phone number, token or password. Login tokens now count as expired when their age is at or past 12 hours.

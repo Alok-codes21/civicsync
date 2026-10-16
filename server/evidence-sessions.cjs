@@ -21,7 +21,7 @@ module.exports=({db,audit,fail})=>{
   const s=db.prepare('SELECT * FROM evidence_sessions WHERE sessionHash=?').get(hash(b.sessionId))
   if(!s||s.complaintId!==c.id||s.actor!==u.username||s.consumedTs!==null)fail(400,'Invalid, used, or unavailable capture session')
   if(s.expiresTs<=Date.now())fail(400,'Capture session expired; request a new session')
-  if(b.nonce!==undefined&&hash(b.nonce)!==s.nonceHash)fail(400,'Invalid capture nonce')
+  if(typeof b.nonce!=='string'||!/^[a-f0-9]{64}$/.test(b.nonce)||hash(b.nonce)!==s.nonceHash)fail(400,'Invalid capture nonce')
   return s
  }
  function consume(b,c,u){

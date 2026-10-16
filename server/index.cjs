@@ -136,7 +136,7 @@ function authUser(req) {
   if (!tok) return null
   const row = db.prepare('SELECT t.createdTs, u.username,u.name,u.role FROM tokens t JOIN users u ON u.username=t.username WHERE t.token=?').get(hashToken(tok))
   if (!row) return null
-  if (Date.now() - row.createdTs > TOKEN_TTL_MS) {
+  if (Date.now() - row.createdTs >= TOKEN_TTL_MS) {
     db.prepare('DELETE FROM tokens WHERE token=?').run(hashToken(tok))
     return null // expired token -> 401 downstream
   }
@@ -191,15 +191,21 @@ app.post('/api/login', async (req, res) => {
   db.prepare('INSERT INTO tokens VALUES (?,?,?)').run(hashToken(token), u.username, now)
   res.json({ token, user: { username: u.username, name: u.name, role: u.role } })
 })
+// Account/session events live apart from the complaint audit chain. No phone number, token or password is ever stored here.
+db.exec('CREATE TABLE IF NOT EXISTS security_events (seq INTEGER PRIMARY KEY AUTOINCREMENT, actor TEXT NOT NULL, action TEXT NOT NULL, ts INTEGER NOT NULL)')
+const securityEvent = (actor, action) => db.prepare('INSERT INTO security_events(actor,action,ts) VALUES (?,?,?)').run(actor, action, Date.now())
 app.post('/api/logout', (req, res) => {
   const h = req.headers.authorization || ''
-  if (h.startsWith('Bearer ')) db.prepare('DELETE FROM tokens WHERE token=?').run(hashToken(h.slice(7)))
+  if (h.startsWith('Bearer ')) {
+    const row = db.prepare('SELECT username FROM tokens WHERE token=?').get(hashToken(h.slice(7)))
+    if (row && db.prepare('DELETE FROM tokens WHERE token=?').run(hashToken(h.slice(7))).changes === 1) securityEvent(row.username, 'Session revoked')
+  }
   res.json({ ok: true })
 })
 app.get('/api/me', (req, res) => { const u = authUser(req); if (!u) return res.status(401).json({ error: 'not logged in' }); res.json({ user: u }) })
 
 // Phone numbers: saved unverified on users.phone, format-checked only. No OTP/SMS.
-require('./phone.cjs').mount({app,db,authUser})
+require('./phone.cjs').mount({app,db,authUser,securityEvent})
 workflows.mount(app, authUser)
 app.use((err, req, res, next) => {
   if (err.status || err.type === 'entity.too.large') return res.status(err.status || 413).json({ error:'Invalid or oversized request' })

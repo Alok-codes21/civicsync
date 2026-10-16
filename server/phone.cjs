@@ -10,7 +10,7 @@ function normalize(phone) {
 function ensureColumn(db) {
   if (!db.prepare('PRAGMA table_info(users)').all().some(c => c.name === 'phone')) db.exec('ALTER TABLE users ADD COLUMN phone TEXT')
 }
-function mount({ app, db, authUser }) {
+function mount({ app, db, authUser, securityEvent }) {
   ensureColumn(db)
   app.post('/api/me/phone', (req, res) => {
     const u = authUser(req)
@@ -19,6 +19,7 @@ function mount({ app, db, authUser }) {
     const phone = normalize(req.body?.phone)
     if (!phone) return res.status(400).json({ error: 'Valid Indian mobile number required (10 digits, optional +91)' })
     db.prepare('UPDATE users SET phone=? WHERE username=?').run(phone, u.username)
+    if (securityEvent) securityEvent(u.username, 'Contact phone updated')
     res.json({ saved: true, verified: false, notice: 'Saved as an unverified contact number. No OTP or SMS is used.' })
   })
 }

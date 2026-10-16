@@ -24,8 +24,8 @@ test('capture sessions require membership and store only hashes; creation audit 
  assert.ok(!a.includes(s.sessionId)&&!a.includes(s.nonce));assert.ok(!a.includes('28.6'))
 })
 test('wrong session user/complaint/nonce rejected without consuming; live camera requires session',async()=>{
- const s=await session('reviewer');await upload({sessionId:s.sessionId},'alok',400)
- await upload({sessionId:s.sessionId},'reviewer',400,id2)
+ const s=await session('reviewer');await upload({sessionId:s.sessionId,nonce:s.nonce},'alok',400)
+ await upload({sessionId:s.sessionId,nonce:s.nonce},'reviewer',400,id2)
  await upload({sessionId:s.sessionId,nonce:'0'.repeat(64)},'reviewer',400)
  assert.equal(db.prepare('SELECT consumedTs FROM evidence_sessions WHERE sessionHash=?').get(sha(s.sessionId)).consumedTs,null)
  await upload({captureMethod:'live_camera'},'alok',400)
@@ -34,32 +34,32 @@ test('wrong session user/complaint/nonce rejected without consuming; live camera
 test('expiry and automatic cleanup; invalid sessions never change complaint state',async()=>{
  const s=await session(),before=db.prepare('SELECT status FROM complaints WHERE id=?').get(id).status
  db.prepare('UPDATE evidence_sessions SET expiresTs=? WHERE sessionHash=?').run(Date.now()-1,sha(s.sessionId))
- const r=await upload({sessionId:s.sessionId},'alok',400);assert.match(r.error,/expired/)
+ const r=await upload({sessionId:s.sessionId,nonce:s.nonce},'alok',400);assert.match(r.error,/expired/)
  retention();assert.equal(db.prepare('SELECT 1 FROM evidence_sessions WHERE sessionHash=?').get(sha(s.sessionId)),undefined)
  assert.equal(db.prepare('SELECT status FROM complaints WHERE id=?').get(id).status,before)
 })
 test('invalid image does not consume; concurrent uploads consume a session once atomically',async()=>{
- const s=await session();await upload({sessionId:s.sessionId,base64:Buffer.from('not image').toString('base64')},'alok',400)
+ const s=await session();await upload({sessionId:s.sessionId,nonce:s.nonce,base64:Buffer.from('not image').toString('base64')},'alok',400)
  const post=()=>fetch(base+cp()+'/evidence',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tokens.alok},body:JSON.stringify({stage:'before',mime:'image/png',base64:png,captureMethod:'live_camera',sessionId:s.sessionId,nonce:s.nonce})})
  const results=await Promise.all([post(),post()]);assert.deepEqual(results.map(r=>r.status).sort(),[201,400])
  const success=await results.find(r=>r.status===201).json();assert.equal(success.captureSessionUsed,true)
- await upload({sessionId:s.sessionId},'alok',400)
+ await upload({sessionId:s.sessionId,nonce:s.nonce},'alok',400)
  assert.equal(db.prepare("SELECT count(*) n FROM audit WHERE action='Evidence capture session consumed'").get().n,1)
 })
 test('session expires during inference and is rechecked at commit',async()=>{
  const s=await session(),detector=require('../server/detector.cjs'),old=detector.predict
  detector.predict=async()=>{db.prepare('UPDATE evidence_sessions SET expiresTs=? WHERE sessionHash=?').run(Date.now()-1,sha(s.sessionId));return {available:false,reason:'AI_DETECTOR_UNAVAILABLE'}}
- try{await upload({sessionId:s.sessionId},'alok',400)}finally{detector.predict=old}
+ try{await upload({sessionId:s.sessionId,nonce:s.nonce},'alok',400)}finally{detector.predict=old}
  assert.equal(db.prepare('SELECT consumedTs FROM evidence_sessions WHERE sessionHash=?').get(sha(s.sessionId)).consumedTs,null)
 })
 test('evidence insert failure rolls back consumption and its audit',async()=>{
  const s=await session(),count=db.prepare('SELECT count(*) n FROM audit').get().n
  db.exec("CREATE TRIGGER fail_evidence BEFORE INSERT ON evidence BEGIN SELECT RAISE(ABORT,'test rollback'); END")
- const res=await fetch(base+cp()+'/evidence',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tokens.alok},body:JSON.stringify({stage:'before',mime:'image/png',base64:png,sessionId:s.sessionId})})
+ const res=await fetch(base+cp()+'/evidence',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tokens.alok},body:JSON.stringify({stage:'before',mime:'image/png',base64:png,sessionId:s.sessionId,nonce:s.nonce})})
  assert.equal(res.status,500);db.exec('DROP TRIGGER fail_evidence')
  assert.equal(db.prepare('SELECT consumedTs FROM evidence_sessions WHERE sessionHash=?').get(sha(s.sessionId)).consumedTs,null)
  assert.equal(db.prepare('SELECT count(*) n FROM audit').get().n,count)
- await upload({sessionId:s.sessionId})
+ await upload({sessionId:s.sessionId,nonce:s.nonce})
 })
 test('SHA compares original bytes, not normalized bytes; high risk does not reject/close/advance complaint',async()=>{
  const before=db.prepare('SELECT status FROM complaints WHERE id=?').get(id).status
