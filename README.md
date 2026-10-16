@@ -121,7 +121,7 @@ Authenticated workflow mutations and their audit events are transactional. Audit
 - `/api/stats/comparison`: descriptive department counts, sample size and mix; standardizes original-SLA rates by category and severity only when every global stratum has >=10 matured cases in the department. No ranking or validated fairness claim. Unresolved matured complaints count in the denominator.
 - `/api/stats/workload`: supervisor-only officer workload/severity/outcomes. No validated risk-adjusted performance score.
 - `/api/stats/hotspots`: supervisor-only 150m connected-component clusters by category over 90 days; >=3 unique issue IDs flag maintenance review. Rounded centres, client location and chaining remain limits. No trained predictive model.
-- POST `/api/complaints/:id/impact`: worker `{metric:water_loss_litres/road_closure_hours/repair_cost_inr,value,unit,note}`; reported observation only.
+- POST `/api/complaints/:id/impact`: worker `{metric:water_loss_litres/road_closure_hours/repair_cost_inr,value,unit,note}`; reported observation only; 409 once the complaint is Resolved (reopen first).
 - GET `/api/impact`: supervisor observations. No demonstrated causal reduction, baseline or controlled evaluation.
 
 Assisted desk filing accepts `citizenUsername` or creates an unclaimed citizen record without any login secret to distribute. The original intake actor can read its unclaimed report. Channels include phone/desk/assisted/offline. Retry buffered requests using the same `Idempotency-Key`; repeated identical requests return the original acknowledgement, conflicting payloads return 409. This is a backend sync contract, not a delivered offline app, anonymous public access or connected telephone/SMS/IVR. Claiming an unclaimed report still needs an identity-verification workflow. Browser accessibility and translations belong to the teammate frontend and remain untested.
@@ -300,3 +300,8 @@ This pass exercised Node 22.23.3 only. The Node 24.21.0 Linux verification menti
 - `POST /api/complaints/:id/route` returns 409 while a complaint is `Verification Pending` (verify or dispute first).
 - Retention also deletes the redacted complaint's capture sessions, in the same transaction as its evidence.
 - Public tracking by acknowledgement number is kept as designed: a random 48-bit suffix, redacted public view, 404 for unknown numbers. Whether unknown vs. existing numbers should look identical is a product decision, not changed here.
+
+## Round 15 behaviour notes
+
+- Login runs the same scrypt verification for unknown usernames (against a startup-computed dummy hash) so response timing does not reveal whether a username exists. The 401 body is unchanged and failures still count toward the rate limit.
+- `POST /api/complaints/:id/impact` returns 409 once the complaint is Resolved (reopen first).

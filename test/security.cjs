@@ -36,7 +36,9 @@ test('bearer tokens stored hashed; raw token absent from database; logout revoke
   const me2=await fetch(base+'/api/me',{headers:{Authorization:'Bearer '+raw}});assert.equal(me2.status,401)
 })
 test('login failure map stays bounded under many distinct usernames',async()=>{
-  for(let i=0;i<1100;i++){const r=await login('nosuch'+i,'wrongpass');assert.equal(r.status,401)}
+  // unknown users now run a dummy scrypt too (timing equalisation); stub scrypt here so 1100 attempts stay fast. The map-bound logic is what this test checks.
+  const nodeCrypto=require('node:crypto'),realScrypt=nodeCrypto.scrypt;nodeCrypto.scrypt=(pw,salt,len,cb)=>setImmediate(()=>cb(null,Buffer.alloc(len)))
+  try{for(let i=0;i<1100;i++){const r=await login('nosuch'+i,'wrongpass');assert.equal(r.status,401)}}finally{nodeCrypto.scrypt=realScrypt}
   assert.ok(_loginFailures.size<=1000,'map size '+_loginFailures.size)
   assert.equal((await login('alok')).status,200)
 })

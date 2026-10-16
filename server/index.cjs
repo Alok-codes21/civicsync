@@ -76,6 +76,7 @@ function verifyPassword(pw, stored) {
    login attempts cannot block other API requests. Sync verify stays for boot-time
    migration/seeding only. */
 const scryptAsync = (pw, salt) => new Promise((resolve, reject) => crypto.scrypt(pw, salt, 64, (err, hash) => err ? reject(err) : resolve(hash)))
+const DUMMY_PASSHASH = hashPassword('not-a-real-account-password') // computed once at startup; never matches a real login
 async function verifyPasswordAsync(pw, stored) {
   const parts = String(stored || '').split(':')
   if (parts.length !== 3 || parts[0] !== 'scrypt') return false
@@ -188,7 +189,8 @@ app.post('/api/login', async (req, res) => {
     return res.status(429).json({ error: `Too many failed login attempts. Try again in ${Math.ceil(retryAfterSec / 60)} minute(s).`, retryAfterSec })
   }
   const u = db.prepare('SELECT * FROM users WHERE username=?').get(uname)
-  if (!u || !(await verifyPasswordAsync(password, u.passhash))) {
+  const passwordOk = await verifyPasswordAsync(password, u ? u.passhash : DUMMY_PASSHASH) // same scrypt work for unknown users
+  if (!u || !passwordOk) {
     recordFailure(key, now)
     return res.status(401).json({ error: 'Invalid username or password' })
   }
