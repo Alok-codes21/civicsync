@@ -88,7 +88,7 @@ Default jurisdiction is Ghaziabad only. Ward polygons are partial vintage data (
 | GET | /api/evidence/:id | authorized raw bytes, no-store; no public evidence URLs |
 | POST | /api/complaints/:id/repair | `{note}`; assigned worker, accepted assignment, before and their after evidence required |
 | POST | /api/complaints/:id/verify | `{decision:approve/dispute, reason}`; citizen owner or independent reviewer, never repair submitter |
-| POST | /api/complaints/:id/evidence-review | `{decision:needs_reupload/accepted_for_work/needs_site_visit, reason}`; reviewer |
+| POST | /api/complaints/:id/evidence-review | `{decision:needs_reupload/accepted_for_work/needs_site_visit, reason}`; reviewer; 409 once the complaint is Resolved (reopen first) |
 | POST | /api/complaints/:id/priority | `{priority, reason}`; supervisor |
 | GET | /api/complaints/:id/related | private duplicate/recurrence candidates |
 | POST | /api/complaints/:id/link | `{target, reason}`; reviewer/supervisor; same category+ward, within 100m; reports retained |
