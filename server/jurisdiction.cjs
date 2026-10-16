@@ -42,7 +42,10 @@ function status() {
   return { municipality: 'Ghaziabad', state: 'Uttar Pradesh', status: 'partial_2022_sbm_unverified',
     geographicLookup: true, lookupCoverage: 'partial', officialOfficerRouting: false,
     wardCount: META.wardCount, expectedWards: META.expectedWards, missingWards: MISSING,
-    verifiedAsOf: manifest.checkedAt, sources: manifest.sources,
+    verifiedAsOf: manifest.checkedAt,
+    sources: manifest.loadedDataset ? { dataset: manifest.loadedDataset.file, recordsDated: manifest.loadedDataset.recordsDated,
+      source: manifest.loadedDataset.source, redistributors: manifest.loadedDataset.redistributors || [],
+      rejectedSources: (manifest.rejectedSources || []).length } : null,
     reason: 'Partial 2022 SBM-derived ward polygons loaded (94/100). Not official GNN boundaries; matches are unverified hints, officers still require manual configuration.' }
 }
 function lookup({ lat, lon }) {

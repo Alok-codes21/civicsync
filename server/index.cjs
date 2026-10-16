@@ -7,8 +7,24 @@ const crypto = require('crypto')
 const Database = require('better-sqlite3')
 
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'civicsync.db')
-const db = new Database(DB_PATH)
+let db
+try {
+  db = new Database(DB_PATH)
+} catch (e) {
+  console.error(`Startup error: cannot open database at DB_PATH=${DB_PATH} (${e.code || e.message}). Check that the parent directory exists and is writable.`)
+  process.exit(1)
+}
 db.pragma('journal_mode = WAL')
+db.pragma('foreign_keys = ON')
+// Verify the pragmas actually took effect instead of silently assuming configuration succeeded.
+// (:memory: databases legitimately report journal_mode "memory"; WAL is only expected on files.)
+const journalMode = String(db.pragma('journal_mode', { simple: true })).toLowerCase()
+if (DB_PATH !== ':memory:' && journalMode !== 'wal') console.warn(`Startup warning: journal_mode is ${journalMode}, expected wal (this filesystem may not support WAL).`)
+if (db.pragma('foreign_keys', { simple: true }) !== 1) console.warn('Startup warning: foreign_keys pragma could not be enabled.')
+// Validate PORT only when explicitly set; the default stays 3001 and HOST stays loopback.
+function parsePort(v) { if (v === undefined || v === '') return 3001; if (!/^\d{1,5}$/.test(v)) return null; const n = Number(v); return n >= 1 && n <= 65535 ? n : null }
+const PORT = parsePort(process.env.PORT)
+if (PORT === null) { console.error(`Startup error: PORT must be an integer between 1 and 65535 (got ${JSON.stringify(process.env.PORT)}).`); process.exit(1) }
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS complaints (
@@ -70,10 +86,14 @@ const hashToken = t => crypto.createHash('sha256').update(t).digest('hex')
 {
   const cols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name)
   if (cols.includes('password') && !cols.includes('passhash')) {
-    db.prepare('ALTER TABLE users ADD COLUMN passhash TEXT').run()
-    for (const u of db.prepare('SELECT username, password FROM users').all())
-      db.prepare('UPDATE users SET passhash=? WHERE username=?').run(hashPassword(u.password), u.username)
-    db.prepare('ALTER TABLE users DROP COLUMN password').run()
+    // One transaction: a mid-migration failure must roll back, never leave a
+    // half-migrated users table on a real existing database.
+    db.transaction(() => {
+      db.prepare('ALTER TABLE users ADD COLUMN passhash TEXT').run()
+      for (const u of db.prepare('SELECT username, password FROM users').all())
+        db.prepare('UPDATE users SET passhash=? WHERE username=?').run(hashPassword(u.password), u.username)
+      db.prepare('ALTER TABLE users DROP COLUMN password').run()
+    })()
     console.log('migrated users table: plaintext passwords re-hashed with scrypt')
   }
 }
@@ -88,11 +108,12 @@ function fmtTs(ts) { return new Date(ts).toISOString() }
 const workflows = require('./workflows.cjs')({ db, hashPassword, fmtDate, fmtTs, PRIORITY_DAYS })
 const { sweep, retention } = workflows
 require('./detector.cjs').load()
-const sweepTimer = setInterval(() => {
-  sweep()
-  retention()
-  db.prepare('DELETE FROM tokens WHERE createdTs < ?').run(Date.now() - 12 * 60 * 60 * 1000)
-}, 60000)
+// Each maintenance step is isolated: one failing step is logged and retried next tick, and never kills the timer or the process.
+function runMaintenance(log = console.error) {
+  const steps = [['sweep', () => sweep()], ['retention', () => retention()], ['token cleanup', () => db.prepare('DELETE FROM tokens WHERE createdTs < ?').run(Date.now() - 12 * 60 * 60 * 1000)]]
+  for (const [label, fn] of steps) { try { fn() } catch (e) { log('maintenance step failed: ' + label + ': ' + (e && e.message)) } }
+}
+const sweepTimer = setInterval(runMaintenance, 60000)
 sweepTimer.unref()
 
 /* ---------- app ---------- */
@@ -100,7 +121,7 @@ const app = express()
 app.use(express.json({ limit: '6mb' }))
 app.use((req,res,next)=>{
  res.set('Cache-Control','no-store').set('X-Content-Type-Options','nosniff').set('Referrer-Policy','no-referrer')
- const origin=req.headers.origin,allowed=(process.env.CORS_ORIGINS||'').split(',').filter(Boolean)
+ const origin=req.headers.origin,allowed=(process.env.CORS_ORIGINS||'').split(',').map(o=>o.trim()).filter(Boolean)
  if(origin&&allowed.includes(origin)){res.set('Access-Control-Allow-Origin',origin).set('Vary','Origin').set('Access-Control-Allow-Headers','Content-Type, Authorization, Idempotency-Key').set('Access-Control-Allow-Methods','GET,POST,OPTIONS')}
  if(req.method==='OPTIONS')return res.sendStatus(origin&&!allowed.includes(origin)?403:204)
  next()
@@ -186,6 +207,5 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error:'Internal server error' })
 })
 app.use((req, res) => res.status(404).json({ error:'Not found - this server is API-only' }))
-const PORT = process.env.PORT || 3001
 if (require.main === module) app.listen(PORT, process.env.HOST || '127.0.0.1', () => { sweep(); retention(); console.log(`CivicSync backend on http://127.0.0.1:${PORT}`) })
-module.exports = { app, db, sweep, retention, _loginFailures: loginFailures, _signupAttempts: signupAttempts, stop: () => { clearInterval(sweepTimer); db.close() } }
+module.exports = { app, db, sweep, retention, _runMaintenance: runMaintenance, _loginFailures: loginFailures, _signupAttempts: signupAttempts, stop: () => { clearInterval(sweepTimer); db.close() } }

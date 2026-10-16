@@ -2,6 +2,15 @@
 
 API-only Node/Express/SQLite backend. No frontend, paid API, SMS, Aadhaar, municipal connection or deployment is included. An optional local-only image model is available as an unvalidated review signal. No fake photo/GPS/verification claims are inserted. This API includes authenticated civic workflows; existing route names remain, but legacy unauthenticated writes are disabled.
 
+## Backups
+
+Use the SQLite online backup API, which is safe on a running server in WAL mode:
+
+    node scripts/backup-db.cjs [destination-file]
+
+It captures a consistent snapshot of the committed database state at the backup point; writes after that point are not part of the snapshot. Do NOT rely on copying the live `.db` file alone while the server runs: in WAL mode recent commits may still sit in the `-wal` file, so a raw copy can be an incomplete snapshot. Backups may contain PII; store them with the same care as the live database.
+
+
 ## Run and test
 
 ```
@@ -170,7 +179,7 @@ Phone-only signup/login, recovery and number ownership checks are not implemente
 
 - Read-only Ghaziabad officer hints: reviewer/supervisor `GET /api/jurisdictions/officer-hints?ward=38`. AE lists cover 100 wards; JE lists 56. Names only, no phone numbers or account bindings. All remain unverified and manual-review-only. Source A/ए numbering may not match 2022 polygons. Multiple zones are retained, not guessed.
 - Local labelled-photo evaluation: `node scripts/evaluate-detector.cjs /private/photos/manifest.json`. No real civic accuracy result exists yet.
-- 66 automated tests pass with checksum-pinned detector installed (synthetic model smoke is not accuracy testing).
+- Older note (historical count, see `npm test` for the current suite): 66 automated tests passed with checksum-pinned detector installed (synthetic model smoke is not accuracy testing).
 - Backend API only. Teammate frontend integration and live deployment are not verified.
 
 
@@ -240,3 +249,37 @@ The integration point `inspectOriginal(bytes)` currently returns `{status: "unsu
 Tests: `npm test`. Added coverage includes session ownership/expiry/replay/concurrent consumption/transaction rollback, original-byte SHA mismatch, deterministic priorities, no automatic complaint transition, unavailable AI, public redaction, reviewer history/audit, retention and additive migration/restart. Tested on Linux Node 22 and 24; Windows has not been exercised here.
 
 The two subprocess count-output tests use plain string writes rather than colored numeric console formatting. `FORCE_COLOR=1 npm test` was also checked on Linux to cover the terminal-color failure; this is not a Windows execution claim.
+
+## Changes on branch improve-loop (for the frontend owner)
+No response JSON shapes were intentionally changed; some validation and state-conflict status codes are stricter, and list order is deterministic when timestamps tie. Status codes that are new or stricter (treat 409 as a business-state conflict, not a server error):
+- `POST /api/complaints/:id/repair`: 409 if the required before/after evidence was marked `needs_reupload` or `needs_site_visit` by a reviewer (latest reviewer decision wins; unreviewed evidence still counts).
+- `POST /api/transfers/:id/accept`, `POST /api/complaints/:id/priority`: 409 on a Resolved complaint (reopen first). `POST /api/extensions/:id/review` approve: 409 if the complaint is already Resolved (deny still works).
+- `POST /api/complaints/:id/link`: 400 if the two selected complaints themselves differ in category/ward, are the same, or are over 100 m apart (unchanged); new 409 if either existing cluster contains a complaint with a different category or ward than the target.
+- `GET /api/complaints`: `limit` 1-100 and `offset` >= 0 must be plain integers, else 400; ties in `submittedTs` are now ordered by id descending.
+- `GET /api/jurisdictions/lookup`: empty, missing or non-numeric `lat`/`lon` now 400.
+- Numeric ids in `/api/transfers/:id/accept` and `/api/extensions/:id/review`: malformed 400, well-formed but missing 404. Escalation level must be 1, 2 or 3 (else 400).
+- `CORS_ORIGINS` entries are now trimmed; matching is still exact.
+
+Round 6 (hardening, no status-code or response-shape removals):
+- Legacy plaintext-password migration is now one atomic transaction: a mid-migration failure rolls back instead of leaving a half-migrated `users` table. Back up real databases before upgrading regardless.
+- `GET /api/jurisdictions`: the documented `sources` field is now actually populated from the provenance manifest (dataset file, records dates, SBM source, redistributors, rejected-source count); previously it was silently omitted. Additive only.
+- Repeated `?lang=` query values (array-shaped input) now fall back to English instead of throwing a 500; normal Hindi/English behaviour unchanged.
+- `npm run demo` cleanup refactored to a single awaited path (listener + idle sockets + database closed exactly once, nonzero exit preserved on scenario failure). The demo header now says "no external network calls" (it binds a local ephemeral port).
+- Startup hardening: an explicitly set `PORT` must now be an integer 1-65535 (clear startup error otherwise; default stays 3001, `HOST` stays loopback). An unopenable `DB_PATH` exits with a clear diagnostic instead of a raw stack. `journal_mode = WAL` and `foreign_keys = ON` are verified after being set, with a startup warning (not silent assumption) if a filesystem cannot do WAL; `:memory:` databases correctly report `memory`.
+- New restart regression tests: an existing current database keeps its users, complaints and passhashes across repeated startups, and startup is idempotent.
+- New operator/CLI tests: `scripts/provision-user.cjs` rejects empty/short/over-512-character passwords, invalid roles and control-character display names without creating the database; accepts exactly 512 characters; strips one trailing newline/CRLF; never overwrites an existing account; closes the database cleanly.
+- New i18n coverage tests: known errors return Hindi with `translationFallback:false`, unknown messages keep their English text with `translationFallback:true`, unsupported languages stay English, statuses are unchanged, and machine fields (acknowledgement number) are never translated.
+- New tests: audit-chain tamper detection (payload change and broken prevHash both invalidate), migration atomicity incl. forced-failure rollback on a temporary legacy database, jurisdiction provenance, language-input shapes, demo exit codes.
+
+## Clean-checkout verification record (15 October 2026)
+
+Results below are from an actual fresh clone (no copied `node_modules`), not from an existing worktree.
+
+- Revision tested: `2ce44ee` (branch `improve-loop`, round 10)
+- Environment: Linux x64, Node v22.23.3, npm 10.9.9
+- `npm ci`: exit 0 (0 vulnerabilities)
+- `npm test`: exit 0 — 151 tests, 150 pass, 0 fail, 1 skipped (optional AI detector model not bundled)
+- `npm run demo`: exit 0 — audit chain reported valid (33 events, local hash chain, not externally anchored)
+- `git status --short` after the runs: clean, no tracked files modified
+
+This pass exercised Node 22.23.3 only. The Node 24.21.0 Linux verification mentioned above predates this pass and was not re-run here; Windows execution remains untested. Reproduce with: `node --version && npm --version && node -p "process.platform + ' ' + process.arch" && npm ci && npm test && npm run demo && git status --short`.

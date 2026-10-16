@@ -1,6 +1,6 @@
 # Original 29 unsolved/partial items - verified local backend scope
 
-66 automated tests pass, including real HTTP workflows, migration/restart, image similarity, offline retry, privacy and metric calculations. Separate optional-model HTTP smoke test also passes (synthetic fixture only, not accuracy evaluation). This does not validate a live deployment, frontend or physical municipal work. D = implemented prototype workflow; P = partial protection with stated gap; N = not implemented. Original #25 tracking is retained, not counted below.
+Historical note (count at that time; run `npm test` for the current suite): 66 automated tests passed, including real HTTP workflows, migration/restart, image similarity, offline retry, privacy and metric calculations. Separate optional-model HTTP smoke test also passes (synthetic fixture only, not accuracy evaluation). This does not validate a live deployment, frontend or physical municipal work. D = implemented prototype workflow; P = partial protection with stated gap; N = not implemented. Original #25 tracking is retained, not counted below.
 
 | Original item | State | Implemented / remaining |
 |---|---|---|
