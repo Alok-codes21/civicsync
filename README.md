@@ -294,3 +294,9 @@ This pass exercised Node 22.23.3 only. The Node 24.21.0 Linux verification menti
 - Approving a deadline extension marks the complaint's pending escalation tasks `superseded`; accepting one returns 409. If the complaint goes overdue again, the sweep reactivates the superseded task (with a new `Escalation L<n>` audit row) instead of silently skipping it.
 - `POST /api/complaints/:id/link` now returns 409 unless every complaint in the source cluster is within 100 m of some complaint in the target cluster. The audit row lists `movedComplaintIds`.
 - With `DEMO_MODE=true`, startup is refused when `HOST` is not loopback (public demo password `demo123`). Set `ALLOW_DEMO_ON_NETWORK=true` only for an intentional LAN demo. The check runs before any demo account is written.
+
+## Round 14 behaviour notes
+
+- `POST /api/complaints/:id/route` returns 409 while a complaint is `Verification Pending` (verify or dispute first).
+- Retention also deletes the redacted complaint's capture sessions, in the same transaction as its evidence.
+- Public tracking by acknowledgement number is kept as designed: a random 48-bit suffix, redacted public view, 404 for unknown numbers. Whether unknown vs. existing numbers should look identical is a product decision, not changed here.
