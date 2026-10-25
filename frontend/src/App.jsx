@@ -13,14 +13,14 @@ function Workspace(){
  const [theme,toggle]=useTheme(), navigate=useNavigate(),location=useLocation();
  const parts=location.pathname.split('/').filter(Boolean),page=parts[0]||'landing',id=parts[1];
  const identity=useRef(0),refreshGeneration=useRef(0),intakePhotos=useRef([]);
- const [user,setUser]=useState(null),[ready,setReady]=useState(false),[list,setList]=useState([]),[publicList,setPublicList]=useState([]),[queue,setQueue]=useState({transfers:[],extensions:[]}),[error,setError]=useState(''),[loading,setLoading]=useState(false),[created,setCreated]=useState(null),[pendingPhotos,setPendingPhotos]=useState([]),[retryingPhotos,setRetryingPhotos]=useState(false);
+ const [user,setUser]=useState(null),[ready,setReady]=useState(false),[list,setList]=useState([]),[publicList,setPublicList]=useState([]),[queue,setQueue]=useState({transfers:[],extensions:[]}),[error,setError]=useState(''),[loading,setLoading]=useState(false),[lastUpdated,setLastUpdated]=useState(null),[created,setCreated]=useState(null),[pendingPhotos,setPendingPhotos]=useState([]),[retryingPhotos,setRetryingPhotos]=useState(false);
  const go=(p,id)=>{setError('');navigate('/'+(p==='landing'?'':p)+(id?'/'+encodeURIComponent(id):''));window.scrollTo(0,0);};
  useEffect(()=>{const expire=()=>{identity.current++;setUser(null);intakePhotos.current=[];setCreated(null);setPendingPhotos([]);setList([]);setQueue({transfers:[],extensions:[]});setError('Session expired. Sign in again.');};window.addEventListener('civicsync:session-expired',expire);return()=>window.removeEventListener('civicsync:session-expired',expire);},[]);
  useEffect(()=>{api('/me').then(d=>setUser(d.user)).catch(e=>{if(e.status===401)setToken('');else setError('Backend unavailable. '+e.message);}).finally(()=>setReady(true));},[]);
  const refresh=useCallback(async()=>{
   const epoch=identity.current,request=++refreshGeneration.current;setLoading(true);try{
    if(user){const d=await api(staff.includes(user.role)&&user.role!=='intake'?'/work-queue':'/complaints?mine=true&limit=100');if(epoch===identity.current&&request===refreshGeneration.current){setList(d.complaints.map(adapt));setQueue(d);}}
-   const d=await api('/complaints?limit=100');if(epoch===identity.current&&request===refreshGeneration.current)setPublicList(d.complaints.map(adapt));
+   const d=await api('/complaints?limit=100');if(epoch===identity.current&&request===refreshGeneration.current){setPublicList(d.complaints.map(adapt));setLastUpdated(new Date().toLocaleTimeString());}
   }catch(e){if(epoch===identity.current&&request===refreshGeneration.current)setError(e.message);}finally{if(epoch===identity.current&&request===refreshGeneration.current)setLoading(false);}
  },[user]);
  useEffect(()=>{if(ready)queueMicrotask(refresh);},[ready,refresh]);
@@ -35,12 +35,12 @@ function Workspace(){
  const isStaff=staff.includes(user?.role);
  if((['overview','assigned','escalation'].includes(page)&&!isStaff)||(page==='report'&&user?.role!=='citizen'))return <div className="card form-card"><h1>Access restricted</h1><p>Your account does not have this role.</p><button className="btn" onClick={()=>go('landing')}>Home</button></div>;
  const shell={page,go,theme,toggle,onSignOut:signOut,auth:user?{...user,role:user.role==='citizen'?'public':user.role}:null,complaints:list,drafts:[]};const Shell=isStaff?OfficialShell:CitizenShell;
- return <Shell {...shell}><div className="prototype-notice">Prototype · No municipal connection · Evidence signals need human review</div>{error&&<div className="storage-alert" role="alert">{error}</div>}{loading&&<p role="status">Refreshing from backend...</p>}
+ return <Shell {...shell}><div className="prototype-notice">Prototype · No municipal connection · Evidence signals need human review</div>{error&&<div className="storage-alert" role="alert">{error}</div>}{loading?<p role="status">Refreshing from backend...</p>:lastUpdated&&<p className="muted">Last refreshed {lastUpdated}. Use Refresh for current status.</p>}
  {page==='report'&&<><PendingIntake user={user} submit={submit}/>{!readLocal(user.username,'pending')&&<Report key={user.username} draft={readLocal(user.username,'draft')||undefined} go={go} onSubmit={submit} onSaveDraft={async f=>{try{saveTextDraft(user.username,f);setError('Text draft saved in this tab only. Photos and GPS are not saved.');return false;}catch(e){setError('Draft was not saved: '+e.message);return false;}}} complaints={[]} />}</>}
  {page==='mine'&&<><div className="workspace-intro"><div><h1>Your complaints.</h1><p>Every next step, in view.</p></div><button className="btn primary" onClick={()=>go('report')}>Report an issue</button></div><MyComplaints go={go} list={list}/><button className="btn" onClick={refresh}>Refresh cases</button></>}
  {page==='success'&&(created?<><Success c={created} go={go}/>{!!pendingPhotos.length&&<section className="card form-card"><h2>Photos not uploaded</h2><p>The complaint is saved. Retry uploads only, not the complaint.</p><ul>{pendingPhotos.map((photo,i)=><li key={i}>{photo.file.name}: {photo.error}</li>)}</ul><button className="btn" disabled={retryingPhotos} onClick={retryPhotos}>{retryingPhotos?'Retrying...':'Retry failed photos only'}</button><small>Keep this page open to retain the selected files.</small></section>}</>:<p>Open My Complaints to find your submitted case.</p>)}
  {page==='detail'&&<CaseDetail key={`${id}:${user?.username||'public'}`} id={id} user={user} go={go} onChange={refresh}/>}
- {page==='public'&&<PublicDashboard complaints={publicList} go={go} role={user?.role==='citizen'?'public':user?.role}/>}
+ {page==='public'&&<><button className="btn" disabled={loading} onClick={refresh}>Refresh public reports</button><PublicDashboard complaints={publicList} go={go} role={user?.role==='citizen'?'public':user?.role}/></>}
  {page==='overview'&&<Overview go={go} complaints={list}/>}
  {page==='assigned'&&<StaffQueue user={user} list={list} queue={queue} go={go} refresh={refresh}/>}
  {page==='escalation'&&<Escalations user={user} go={go}/>}

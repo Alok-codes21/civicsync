@@ -1,11 +1,12 @@
 import { LuArrowRight, LuBellRing, LuClock3, LuFileText, LuMapPin, LuShieldCheck } from "react-icons/lu";
+import {dueToday} from '../dates.js';
 import { complaints } from "./data";
 import { PriorityBadge, StatusBadge } from "./ui";
 
 export function Overview({ go, complaints: complaintList = complaints }) {
   const topCards = [
     { label: "Open complaints", value: complaintList.filter((c) => c.status !== "Resolved").length },
-    { label: "Due today", value: complaintList.filter((c) => c.remaining === "Due today").length },
+    { label: "Due today", value: complaintList.filter((c) => dueToday(c,new Date().getTime())).length },
     { label: "Escalated", value: complaintList.filter((c) => c.status === "Escalated").length },
     { label: "Resolved", value: complaintList.filter((c) => c.status === "Resolved").length },
   ];
@@ -21,7 +22,7 @@ export function Overview({ go, complaints: complaintList = complaints }) {
         ))}
       </div>
       <div className="card form-card" style={{ marginTop: 20 }}>
-        <div className="eyebrow-sm">LIVE SERVICE QUEUE</div>
+        <div className="eyebrow-sm">CURRENT LOADED QUEUE</div>
         {complaintList.slice(0, 5).map((c) => (
           <div key={c.id} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "12px 0", borderBottom: "1px solid var(--line)" }}>
             <div>

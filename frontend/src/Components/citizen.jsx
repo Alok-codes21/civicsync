@@ -146,22 +146,22 @@ export function Report({ go, onSubmit, onSaveDraft, complaints: existingComplain
       <form className="form-grid" onSubmit={submit}>
         <div>
           <div className="card form-card">
-            <div className="field"><label>Complaint title *</label>
-              <input required value={f.title} onChange={set("title")} placeholder="e.g. Deep pothole near the market crossing" /></div>
-            <div className="field"><label>Category *</label>
-              <select required value={f.category} onChange={set("category")}>
+            <div className="field"><label htmlFor="report-title">Complaint title *</label>
+              <input id="report-title" maxLength={180} required value={f.title} onChange={set("title")} placeholder="e.g. Deep pothole near the market crossing" /></div>
+            <div className="field"><label htmlFor="report-category">Category *</label>
+              <select id="report-category" required value={f.category} onChange={set("category")}>
                 <option value="">Select category</option>
                 {categories.map((c) => <option key={c}>{c}</option>)}
               </select></div>
-            <div className="field" style={{ marginBottom: 0 }}><label>Description *</label>
-              <textarea required value={f.desc} onChange={set("desc")} placeholder="What is the problem? Since when? Who is affected?" /></div>
+            <div className="field" style={{ marginBottom: 0 }}><label htmlFor="report-desc">Description *</label>
+              <textarea id="report-desc" maxLength={4000} required value={f.desc} onChange={set("desc")} placeholder="What is the problem? Since when? Who is affected?" /></div>
           </div>
           <div className="card form-card">
             <div className="field" style={{ marginBottom: 0 }}>
               <label>Photos (up to 4)</label>
               <div className="uploads">
-                <input ref={cameraInput} className="visually-hidden" type="file" accept="image/*" capture="environment" onChange={addPhotos} />
-                <input ref={galleryInput} className="visually-hidden" type="file" accept="image/*" multiple onChange={addPhotos} />
+                <input ref={cameraInput} className="visually-hidden" type="file" accept="image/png,image/jpeg" capture="environment" onChange={addPhotos} />
+                <input ref={galleryInput} className="visually-hidden" type="file" accept="image/png,image/jpeg" multiple onChange={addPhotos} />
                 <button className="upload-box" type="button" aria-label="Take a photo" title="Take a photo"
                   disabled={f.photos.length >= 4} onClick={() => cameraInput.current?.click()}><LuCamera /></button>
                 <button className="upload-box" type="button" aria-label="Upload photos" title="Upload photos"
@@ -182,9 +182,9 @@ export function Report({ go, onSubmit, onSaveDraft, complaints: existingComplain
             </div>
           </div>
           <div className="card form-card">
-            <div className="field"><label>Ward / locality *</label><input required value={f.ward || ""} onChange={set("ward")} placeholder="e.g. 38" /></div><div className="field">
-              <label>Location or address *</label>
-              <input required={f.location.latitude == null} value={f.location.address}
+            <div className="field"><label htmlFor="report-ward">Ward / locality *</label><input id="report-ward" maxLength={140} required value={f.ward || ""} onChange={set("ward")} placeholder="e.g. 38" /></div><div className="field">
+              <label htmlFor="report-address">Location or address *</label>
+              <input id="report-address" maxLength={180} required={f.location.latitude == null} value={f.location.address}
                 onChange={(e) => setF((current) => ({ ...current, location: { ...current.location, address: e.target.value } }))}
                 placeholder="Street, landmark, or neighborhood" />
             </div>
@@ -223,7 +223,7 @@ export function Report({ go, onSubmit, onSaveDraft, complaints: existingComplain
                     <p className="muted">{duplicateMatches.length} possible {duplicateMatches.length === 1 ? "match" : "matches"}:</p>
                     {duplicateMatches.slice(0, 5).map((complaint) => (
                       <div className="duplicate-item" key={complaint.id}>
-                        <div><b>{complaint.title}</b><small>{complaint.id} · {complaint.ward || complaint.address || "Location not provided"}</small></div>
+                        <div><b>{complaint.title}</b><small>{complaint.id} · {complaint.ward || complaint.address || "Private location hidden"}</small></div>
                         <button type="button" className="btn sm" onClick={() => go("detail", complaint.id)}>View</button>
                       </div>
                     ))}
@@ -336,7 +336,7 @@ export function MyComplaints({ go, list }) {
         </select>
       </div>
       <div className="search" style={{ marginTop: 22 }}>
-        <LuSearch /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by ID, title or category" />
+        <LuSearch /><input aria-label="Search complaints" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by ID, title or category" />
       </div>
       <div className="tabs">
         {TABS.map((t) => <button key={t} className={`tab ${tab === t ? "on" : ""}`} onClick={() => setTab(t)}>{t}</button>)}
@@ -480,7 +480,7 @@ export function Detail({ id, go, complaints: complaintList = complaints, onRefre
           <div className="card form-card">
             <h3 style={{ fontFamily: "var(--sans)", fontSize: 15, fontWeight: 500 }}>Actions</h3>
             <div className="stack">
-              <input ref={evidenceInput} className="visually-hidden" type="file" accept="image/*" multiple
+              <input ref={evidenceInput} className="visually-hidden" type="file" accept="image/png,image/jpeg" multiple
                 onChange={addEvidenceFiles} />
               <button className={`btn ${activeAction === "evidence" ? "action-active" : ""}`}
                 disabled={savingEvidence || (c.photos?.length || 0) >= 4}
@@ -608,7 +608,7 @@ export function PublicDashboard({ complaints: complaintList, go, role }) {
             </div>
             <p>{complaint.desc || complaint.category}</p>
             <div className="public-complaint-footer">
-              <span><LuMapPin size={13} /> {complaint.ward || complaint.address || "Location not provided"} · {complaint.category}</span>
+              <span>Private location hidden · {complaint.category}</span>
               <button className="btn sm" onClick={() => go("detail", complaint.id)}>View report</button>
             </div>
           </article>

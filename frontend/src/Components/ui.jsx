@@ -1,3 +1,4 @@
+import {Link} from 'react-router-dom';
 import { useState } from "react";
 import {
   LuShieldCheck, LuMoon, LuSun, LuBell, LuLogOut, LuLayoutDashboard, LuListChecks,
@@ -5,10 +6,10 @@ import {
 } from "react-icons/lu";
 
 export const Logo = ({ sub, onClick }) => (
-  <div className="logo" onClick={onClick}>
+  <button className="logo logo-button" onClick={onClick} aria-label="CivicSync home">
     <div className="logo-mark"><LuShieldCheck /></div>
     <div><b>CivicSync</b><small>{sub}</small></div>
-  </div>
+  </button>
 );
 
 export const ThemeBtn = ({ theme, toggle }) => (
@@ -73,7 +74,7 @@ export function CitizenShell({ page, go, theme, toggle, children, complaints = [
           <Logo sub="Citizen Portal" onClick={() => go("landing")} />
           <div className="c-links">
             {links.map(([k, l]) => (
-              <a key={k} className={page === k || (k === "mine" && page === "detail") ? "active" : ""} onClick={() => go(k)}>{l}</a>
+              <Link key={k} to={k==='landing'?'/':'/'+k} aria-current={page===k?'page':undefined} className={page === k || (k === "mine" && page === "detail") ? "active" : ""}>{l}</Link>
             ))}
             <span className="sp" />
             <ThemeBtn theme={theme} toggle={toggle} />
@@ -132,7 +133,7 @@ export function OfficialShell({ page, go, theme, toggle, children, onSignOut, au
         <Logo sub="Official Console" onClick={() => go("landing")} />
         <nav>
           {nav.map(([k, l, I]) => (
-            <a key={k} className={page === k ? "active" : ""} onClick={() => go(k)}><I size={18} /> {l}</a>
+            <Link key={k} to={k==='landing'?'/':'/'+k} aria-current={page===k?'page':undefined} className={page === k ? "active" : ""}><I size={18} /> {l}</Link>
           ))}
         </nav>
         <div className="signed">

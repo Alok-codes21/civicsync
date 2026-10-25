@@ -1,0 +1,2 @@
+const assert=require('node:assert/strict');
+(async()=>{const {civicDate,dueToday}=await import('../src/dates.js');const now=Date.parse('2026-10-25T19:00:00Z');assert.equal(civicDate(now),'26 Oct 2026');assert.equal(dueToday({status:'Assigned',deadline:'26 Oct 2026'},now),true);for(const c of [{status:'Resolved',deadline:'26 Oct 2026'},{status:'Assigned',deadline:'25 Oct 2026'},{status:'Assigned',deadline:'27 Oct 2026'},{status:'Assigned'}])assert.equal(dueToday(c,now),false);console.log('PASS civic timezone due-today boundary, resolved, overdue, tomorrow, missing');})();
