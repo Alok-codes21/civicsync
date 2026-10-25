@@ -145,7 +145,7 @@ export function OfficialShell({ page, go, theme, toggle, children, onSignOut, au
           </div>
         </div>
       </aside>
-      <nav className="official-mobile-nav" aria-label="Official dashboard">
+      <nav className="official-mobile-nav" aria-label="Official dashboard"><Link to="/service" className="btn sm">Service info</Link><Link to="/operations" className="btn sm">Backend metrics</Link>{auth?.role==='intake'&&<Link to="/report" className="btn sm">Assisted intake</Link>}<button className="btn sm" aria-label="Sign out (mobile)" onClick={onSignOut}>Sign out</button><ThemeBtn theme={theme} toggle={toggle}/>
         {nav.map(([key, label, Icon]) => (
           <button key={key} className={`btn sm ${page === key ? "soft" : ""}`} onClick={() => go(key)}>
             <Icon size={15} /> {label}
