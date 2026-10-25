@@ -133,7 +133,7 @@ export function CitizenShell({ page, go, theme, toggle, children, complaints = [
   );
 }
 
-export function OfficialShell({ page, go, theme, toggle, children, onSignOut }) {
+export function OfficialShell({ page, go, theme, toggle, children, onSignOut, auth }) {
   const nav = [
     ["overview", "Overview", LuLayoutDashboard],
     ["assigned", "Assigned Complaints", LuListChecks],
@@ -151,7 +151,7 @@ export function OfficialShell({ page, go, theme, toggle, children, onSignOut }) 
         </nav>
         <div className="signed">
           <small>Signed in as</small>
-          <b>R. Verma - JE, Zone 4</b>
+          <b>{auth?.name || auth?.username || "Staff"}</b><small>{auth?.role}</small>
           <div className="row">
             <button className="so" onClick={onSignOut}><LuLogOut /> Sign out</button>
             <ThemeBtn theme={theme} toggle={toggle} />
