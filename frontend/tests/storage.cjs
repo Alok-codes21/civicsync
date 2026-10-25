@@ -1,0 +1,2 @@
+const assert=require('node:assert/strict');
+(async()=>{global.sessionStorage={getItem:()=>{throw new Error('Disabled')},setItem:()=>{throw new Error('Disabled')},removeItem:()=>{throw new Error('Disabled')}};const api=await import('../src/api.js');assert.equal(api.storageUnavailable,true);assert.doesNotThrow(()=>api.setToken('test-session'));assert.equal(api.getToken(),'test-session');api.setToken('');assert.equal(api.getToken(),'');console.log('PASS blocked sessionStorage does not crash API initialization/signout');})();

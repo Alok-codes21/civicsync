@@ -1,6 +1,7 @@
-const BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
-let token = sessionStorage.getItem('civicsync.token') || '';
-export function setToken(value) { token = value || ''; if(token) sessionStorage.setItem('civicsync.token',token); else sessionStorage.removeItem('civicsync.token'); }
+const BASE = (import.meta.env?.VITE_API_BASE_URL || '').replace(/\/$/, '');
+let token='';export let storageUnavailable=false;try{token=sessionStorage.getItem('civicsync.token')||'';}catch{storageUnavailable=true;}
+export function getToken(){return token;}
+export function setToken(value) { token = value || ''; try{if(token) sessionStorage.setItem('civicsync.token',token); else sessionStorage.removeItem('civicsync.token');storageUnavailable=false;}catch{storageUnavailable=true;} }
 export async function api(path, { method='GET', body, headers={}, signal }={}) {
  const requestToken=token;
  const response=await fetch(`${BASE}/api${path}`, {method,signal,headers:{...(body?{'Content-Type':'application/json'}:{}),...(token?{Authorization:`Bearer ${token}`} : {}),...headers},...(body?{body:JSON.stringify(body)}:{})});
