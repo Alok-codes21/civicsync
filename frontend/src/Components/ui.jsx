@@ -28,7 +28,7 @@ export function CitizenShell({ page, go, theme, toggle, children, complaints = [
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notificationError, setNotificationError] = useState("");
   const [grievanceNotifications, setGrievanceNotifications] = useState([]);
-  const links = [["landing", "Home"], ["report", "Report"], ["mine", "My Complaints"], ["drafts", "Drafts"], ["public", "Public"], ["service", "Service info"]];
+  const links = [["landing", "Home"], ["report", "Report"], ["mine", "My Complaints"], ["drafts", "Drafts"], ["public", "Public"]];
   const toggleNotifications = () => {
     if (notificationsOpen) {
       setNotificationsOpen(false);
@@ -77,7 +77,7 @@ export function CitizenShell({ page, go, theme, toggle, children, complaints = [
               <Link key={k} to={k==='landing'?'/':'/'+k} aria-current={page===k?'page':undefined} className={page === k || (k === "mine" && page === "detail") ? "active" : ""}>{l}</Link>
             ))}
             <span className="sp" />
-            <Link to="/service" className="btn sm">Service info</Link><ThemeBtn theme={theme} toggle={toggle} />
+            <Link to="/operations" className="btn sm">Metrics</Link><Link to="/service" className="btn sm">Service info</Link><ThemeBtn theme={theme} toggle={toggle} />
             <div className="notification-wrap">
               <button className="icon-btn" aria-label="Notifications" aria-expanded={notificationsOpen}
                 aria-controls="notification-panel" onClick={toggleNotifications}>
@@ -141,7 +141,7 @@ export function OfficialShell({ page, go, theme, toggle, children, onSignOut, au
           <b>{auth?.name || auth?.username || "Staff"}</b><small>{auth?.role}</small>
           <div className="row">
             <button className="so" onClick={onSignOut}><LuLogOut /> Sign out</button>
-            <Link to="/service" className="btn sm">Service info</Link><ThemeBtn theme={theme} toggle={toggle} />
+            <Link to="/operations" className="btn sm">Metrics</Link><Link to="/service" className="btn sm">Service info</Link><ThemeBtn theme={theme} toggle={toggle} />
           </div>
         </div>
       </aside>
