@@ -42,13 +42,13 @@ const findDuplicates = (report, complaints) => {
   });
 };
 
-export function Report({ go, onSubmit, onSaveDraft, complaints: existingComplaints, draft }) {
+export function Report({ go, onSubmit, onSaveDraft, complaints: existingComplaints, draft, assisted=false }) {
   const [f, setF] = useState(() => draft ? {
     ...draft,
     intakeKey: draft.intakeKey||crypto.randomUUID(),
     photos: (draft.photos || []).map((data) => ({ file: null, url: data, data })),
   } : {
-    title: "", category: "", desc: "", ok: false, photos: [], ward: "", intakeKey: crypto.randomUUID(),
+    ...(assisted?{channel:'assisted',language:'en',citizenUsername:'',phone:''}:{}),title: "", category: "", desc: "", ok: false, photos: [], ward: "", intakeKey: crypto.randomUUID(),
     location: { latitude: null, longitude: null, accuracy: null, address: "" },
   });
   const [photoError, setPhotoError] = useState("");
@@ -146,6 +146,7 @@ export function Report({ go, onSubmit, onSaveDraft, complaints: existingComplain
       <form className="form-grid" onSubmit={submit}>
         <div>
           <div className="card form-card">
+            {assisted&&<section><h2>Assisted intake</h2><p>Use a known citizen username, or leave blank for an unclaimed report. No claim/recovery or SMS verification is available. Language metadata does not translate this form.</p><label className="field">Citizen username (optional)<input value={f.citizenUsername||''} onChange={set('citizenUsername')}/></label><label className="field">Intake channel<select value={f.channel||'assisted'} onChange={set('channel')}>{['assisted','phone','desk','offline'].map(x=><option key={x}>{x}</option>)}</select></label><label className="field">Report language<select value={f.language||'en'} onChange={set('language')}><option value="en">English</option><option value="hi">Hindi (limited backend messages)</option></select></label><label className="field">Citizen phone (optional, unverified)<input type="tel" value={f.phone||''} onChange={set('phone')}/></label></section>}
             <div className="field"><label htmlFor="report-title">Complaint title *</label>
               <input id="report-title" maxLength={180} required value={f.title} onChange={set("title")} placeholder="e.g. Deep pothole near the market crossing" /></div>
             <div className="field"><label htmlFor="report-category">Category *</label>

@@ -131,7 +131,7 @@ export function OfficialShell({ page, go, theme, toggle, children, onSignOut, au
     <div className="o-shell">
       <aside className="side">
         <Logo sub="Official Console" onClick={() => go("landing")} />
-        <nav>
+        <nav><Link to="/operations" className="item">Backend metrics</Link><Link to="/service" className="item">Service info</Link>
           {nav.map(([k, l, I]) => (
             <Link key={k} to={k==='landing'?'/':'/'+k} aria-current={page===k?'page':undefined} className={page === k ? "active" : ""}><I size={18} /> {l}</Link>
           ))}
@@ -140,8 +140,8 @@ export function OfficialShell({ page, go, theme, toggle, children, onSignOut, au
           <small>Signed in as</small>
           <b>{auth?.name || auth?.username || "Staff"}</b><small>{auth?.role}</small>
           <div className="row">
-            <button className="so" onClick={onSignOut}><LuLogOut /> Sign out</button>
-            <Link to="/operations" className="btn sm">Metrics</Link><Link to="/service" className="btn sm">Service info</Link><ThemeBtn theme={theme} toggle={toggle} />
+            {auth?.role==='intake'&&<Link to="/report" className="btn">Assisted intake</Link>}<button className="so" onClick={onSignOut}><LuLogOut /> Sign out</button>
+            <ThemeBtn theme={theme} toggle={toggle} />
           </div>
         </div>
       </aside>
