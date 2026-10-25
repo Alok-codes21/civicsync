@@ -10,7 +10,8 @@
     "test": "node --test test/*.cjs",
     "demo": "node scripts/demo.cjs",
     "build:web": "npm --prefix frontend ci && npm --prefix frontend run build",
-    "start:web": "node scripts/serve-web.cjs"
+    "start:web": "node scripts/serve-web.cjs",
+    "start:integrated": "node scripts/start-integrated.cjs"
   },
   "engines": {
     "node": "22.x || 24.x"

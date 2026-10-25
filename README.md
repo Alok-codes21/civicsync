@@ -1,6 +1,6 @@
 # CivicSync backend v2 - local prototype workflows
 
-API-only Node/Express/SQLite backend. No frontend, paid API, SMS, Aadhaar, municipal connection or deployment is included. An optional local-only image model is available as an unvalidated review signal. No fake photo/GPS/verification claims are inserted. This API includes authenticated civic workflows; existing route names remain, but legacy unauthenticated writes are disabled.
+Node/Express/SQLite prototype with the existing teammate frontend integrated on this branch. No paid API, SMS, Aadhaar or municipal connection is included. Live deployment is not yet verified. An optional local-only image model is available as an unvalidated review signal. No fake photo/GPS/verification claims are inserted. This API includes authenticated civic workflows; existing route names remain, but legacy unauthenticated writes are disabled.
 
 ## Backups
 
@@ -180,7 +180,7 @@ Phone-only signup/login, recovery and number ownership checks are not implemente
 - Read-only Ghaziabad officer hints: reviewer/supervisor `GET /api/jurisdictions/officer-hints?ward=38`. AE lists cover 100 wards; JE lists 56. Names only, no phone numbers or account bindings. All remain unverified and manual-review-only. Source A/ए numbering may not match 2022 polygons. Multiple zones are retained, not guessed.
 - Local labelled-photo evaluation: `node scripts/evaluate-detector.cjs /private/photos/manifest.json`. No real civic accuracy result exists yet.
 - Older note (historical count, see `npm test` for the current suite): 66 automated tests passed with checksum-pinned detector installed (synthetic model smoke is not accuracy testing).
-- Backend API only. Teammate frontend integration and live deployment are not verified.
+- Frontend integration on this branch has local tests; live deployment and hosting persistence remain unverified.
 
 
 ## Routing suggestions (read-only)
@@ -283,3 +283,7 @@ Results below are from an actual fresh clone (no copied `node_modules`), not fro
 - `git status --short` after the runs: clean, no tracked files modified
 
 This pass exercised Node 22.23.3 only. The Node 24.21.0 Linux verification mentioned above predates this pass and was not re-run here; Windows execution remains untested. Reproduce with: `node --version && npm --version && node -p "process.platform + ' ' + process.arch" && npm ci && npm test && npm run demo && git status --short`.
+
+## Integrated frontend branch
+
+See [frontend/TESTING.md](frontend/TESTING.md) and [frontend/DEPLOYMENT.md](frontend/DEPLOYMENT.md). Teammate attribution is retained in frontend/ATTRIBUTION.md. Main backend source is unchanged by frontend rounds.
