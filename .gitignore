@@ -4,3 +4,5 @@ server/civicsync.db*
 .DS_Store
 
 models/
+
+frontend/dist/
