@@ -45,6 +45,7 @@ const findDuplicates = (report, complaints) => {
 export function Report({ go, onSubmit, onSaveDraft, complaints: existingComplaints, draft }) {
   const [f, setF] = useState(() => draft ? {
     ...draft,
+    intakeKey: draft.intakeKey||crypto.randomUUID(),
     photos: (draft.photos || []).map((data) => ({ file: null, url: data, data })),
   } : {
     title: "", category: "", desc: "", ok: false, photos: [], ward: "", intakeKey: crypto.randomUUID(),
@@ -364,7 +365,7 @@ export function MyComplaints({ go, list }) {
             <div className="btn-row">
               <button className="btn sm soft" onClick={() => go("detail", c.id)}>Track Progress <LuArrowRight /></button>
               {c.overdue && <button className={`btn sm ${grievanceComplaint?.id === c.id ? "action-active" : ""}`}
-                onClick={() => setGrievanceComplaint(c)}><LuFlag /> Submit Grievance</button>}
+                onClick={() => setGrievanceComplaint(c)}><LuFlag /> Grievance options</button>}
             </div>
           </div>
         </div>
@@ -493,7 +494,7 @@ export function Detail({ id, go, complaints: complaintList = complaints, onRefre
               </button>
               <button className={`btn ${activeAction === "grievance" ? "action-active" : ""}`}
                 onClick={() => { setActiveAction("grievance"); setGrievanceOpen(true); }}>
-                <LuFlag /> Submit Grievance
+                <LuFlag /> Grievance options
               </button>
             </div>
           </div>
@@ -560,73 +561,7 @@ function downloadSummary(complaint) {
 }
 
 export function GrievanceDialog({ complaint, onClose }) {
-  const [reason, setReason] = useState("");
-  const [details, setDetails] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-  const [error, setError] = useState("");
-  const submit = (event) => {
-    event.preventDefault();
-    try {
-      const saved = JSON.parse(window.localStorage.getItem("civicsync.grievances") || "[]");
-      if (!Array.isArray(saved)) throw new Error("Saved grievance data has an unexpected format.");
-      const grievance = {
-        id: `GRV-${window.crypto?.randomUUID?.() || Date.now()}`,
-        complaintId: complaint.id,
-        complaintTitle: complaint.title,
-        reason,
-        details: details.trim(),
-        createdAt: new Date().toISOString(),
-        status: "Submitted",
-      };
-      window.localStorage.setItem("civicsync.grievances", JSON.stringify([grievance, ...saved]));
-      setSubmitted(true);
-      setError("");
-    } catch (saveError) {
-      setError(`Grievance could not be saved in this browser: ${saveError.message}`);
-    }
-  };
-
-  return (
-    <div className="dialog-backdrop" role="presentation" onMouseDown={(event) => {
-      if (event.target === event.currentTarget) onClose();
-    }}>
-      <section className="card grievance-dialog" role="dialog" aria-modal="true" aria-labelledby="grievance-title">
-        {submitted ? (
-          <>
-            <h2 id="grievance-title">Grievance submitted</h2>
-            <p className="muted">Your grievance for {complaint.id} has been saved on this device.</p>
-            <button className="btn primary" onClick={onClose}>Done</button>
-          </>
-        ) : (
-          <form onSubmit={submit}>
-            <h2 id="grievance-title">Submit a grievance</h2>
-            <p className="muted">Complaint {complaint.id}: {complaint.title}</p>
-            <div className="field">
-              <label htmlFor="grievance-reason">Reason *</label>
-              <select id="grievance-reason" required value={reason} onChange={(event) => setReason(event.target.value)}>
-                <option value="">Select a reason</option>
-                <option>Deadline missed</option>
-                <option>Issue not resolved</option>
-                <option>Response unsatisfactory</option>
-                <option>Other</option>
-              </select>
-            </div>
-            <div className="field">
-              <label htmlFor="grievance-details">Tell us more *</label>
-              <textarea id="grievance-details" required minLength={10} value={details}
-                onChange={(event) => setDetails(event.target.value)}
-                placeholder="Describe why you are submitting this grievance (at least 10 characters)." />
-            </div>
-            {error && <p className="upload-error" role="alert">{error}</p>}
-            <div className="dialog-actions">
-              <button className="btn" type="button" onClick={onClose}>Cancel</button>
-              <button className="btn primary" type="submit">Submit Grievance</button>
-            </div>
-          </form>
-        )}
-      </section>
-    </div>
-  );
+  return <div className="dialog-backdrop"><section className="card grievance-dialog" role="dialog" aria-modal="true" aria-labelledby="grievance-title"><h2 id="grievance-title">Grievance submission unavailable</h2><p>No grievance service is connected. Nothing has been sent and no official has been notified.</p><p>Open complaint {complaint.id} to see the backend timeline. Repair disputes and reopen actions, when allowed, are available there.</p><button className="btn" onClick={onClose}>Close</button></section></div>;
 }
 
 export function PublicDashboard({ complaints: complaintList, go, role }) {

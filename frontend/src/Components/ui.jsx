@@ -33,21 +33,7 @@ export function CitizenShell({ page, go, theme, toggle, children, complaints = [
       setNotificationsOpen(false);
       return;
     }
-    try {
-      const saved = JSON.parse(window.localStorage.getItem("civicsync.grievances") || "[]");
-      if (!Array.isArray(saved)) throw new Error("Saved grievance data has an unexpected format.");
-      setGrievanceNotifications(saved.map((grievance) => ({
-        id: `grievance-${grievance.id}`,
-        complaintId: grievance.complaintId,
-        title: "Grievance submitted",
-        message: grievance.complaintTitle || grievance.reason,
-        createdAt: grievance.createdAt || "",
-        page: "detail",
-      })));
-      setNotificationError("");
-    } catch (error) {
-      setNotificationError(`Notifications could not load grievances: ${error.message}`);
-    }
+    setGrievanceNotifications([]);setNotificationError('');
     setNotificationsOpen(true);
   };
   const complaintNotifications = complaints.flatMap((complaint) => {
