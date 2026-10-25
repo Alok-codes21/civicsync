@@ -1,16 +1,26 @@
-# React + Vite
+# Anveshan / CivicSync integrated frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This branch preserves the teammate interface and connects it to the existing Express/SQLite backend. It is a local prototype, not a live municipal service. Attribution is in `ATTRIBUTION.md`.
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Use Node22 or24. From the repository root:
 
-## React Compiler
+```sh
+npm ci
+npm run build:web
+npm run start:integrated:ai
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Open the web port printed by the launcher (default8080). The frontend uses same-origin `/api`; leave `VITE_API_BASE_URL` unset. The enabled-start command downloads/checks the pinned local ONNX weights if missing, then starts the integrated app. No paid API or image transfer to an AI service is used. Without setup, ordinary start reports the detector unavailable. `AI_DETECTOR=off` disables it.
 
-## Expanding the ESLint configuration
+Demo accounts/routes are off by default. Only for an isolated synthetic demonstration, explicitly set `DEMO_MODE=true DEMO_ROUTES=true`; public sample credentials are documented in the root README. Do not use real citizen data. Local data uses SQLite; review storage/backup and90-day retention behavior in the root README before use. For a quick disposable test set `DB_PATH=:memory:` (all data disappears when stopped).
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Verification and boundaries
+
+- `TESTING.md`: browser/API checks and requirements.
+- `INTEGRATION-COVERAGE.md` and `ENDPOINT-PARITY.md`: actual workflow coverage, exclusions, payload limits.
+- `../docs/DETECTOR-VERIFICATION.md`: actual model execution evidence, not civic-photo accuracy validation.
+- `DEPLOYMENT.md`: integrated hosting settings and unresolved persistence/login decisions. Deployment remains deferred, not complete.
+
+The detector is an uncalibrated human-review signal. Real OTP/SMS/municipality/staff verification, account recovery, full Hindi UI and production certification are not supplied by this frontend.
