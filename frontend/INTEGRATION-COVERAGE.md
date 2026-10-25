@@ -1,12 +1,16 @@
-# Frontend and backend coverage after 16 review rounds
+# Frontend and backend coverage after 16 review rounds and parity audit
 
 The frontend uses the existing backend; server business logic, endpoints and schema are unchanged. This is local prototype coverage, not production certification or a claim that every optional API parameter has a polished screen.
 
+See `ENDPOINT-PARITY.md` for every registered route and explicit parameter/permission boundaries. The later audit found genuine gaps missed by the earlier endpoint summary: hazard input and routing-state reachability, plus dropped response fields.
+
 ## Connected workflows
 - Login, citizen signup, logout and session expiry; tab-scoped draft/recovery with stable intake replay.
+- User-reported hazards reach backend severity/deadline logic and survive text drafts/exact replay.
 - Citizen and assisted intake: canonical complaint acknowledgement, channel/language/citizen metadata, photos and failed-photo retry. An unclaimed assisted account is not a verified/recoverable citizen login.
 - Private/public complaint lists, pagination, detail and deep-link refresh. Public counts explicitly describe loaded pages, not authoritative global metrics.
 - Staff acceptance, status/progress, before/after evidence, repair review, approve/dispute/reopen, evidence scope, transfers/extensions and supervisor escalation acceptance.
+- Supervisor routing application on any non-resolved case requires explicit assignment-reset confirmation. Private assessment/review history, latest upload signals and acknowledgement routing/candidate receipts are readable.
 - Supervisor priority, route configuration (replacement warning and confirmation), assigned staff contact lookup, impact observation; backend permissions remain authoritative.
 - Related candidate lookup and reviewer/supervisor issue linking, preserving complaint records.
 - Service capability/privacy/translation/charter/jurisdiction notices; citizen contact update is unverified, no OTP/SMS.

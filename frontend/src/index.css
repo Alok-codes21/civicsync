@@ -431,3 +431,7 @@ input.visually-hidden{min-height:0!important;max-width:1px!important;position:fi
 .backend-result{margin:18px 0;padding:18px;background:var(--bg);border:1px solid var(--border);border-radius:14px;overflow-wrap:anywhere;min-width:0}
 .result-fields{margin:0;display:grid;gap:12px}.result-fields>div{min-width:0;padding-bottom:12px;border-bottom:1px solid var(--border)}.result-fields dt{font-size:12px;letter-spacing:.025em;color:var(--muted);font-weight:600;margin-bottom:5px}.result-fields dd{margin:0;line-height:1.6}.result-fields .result-fields{padding:10px 0 0 12px;border-left:2px solid var(--border)}.result-list{margin:0;padding-left:20px}.result-list>li{padding:7px 0}.result-value{white-space:pre-wrap}.search-fields{display:flex;gap:12px;align-items:end;flex-wrap:wrap}.search-fields .field{flex:1 1 180px}.search-result{display:flex;justify-content:space-between;align-items:center;gap:16px;border-top:1px solid var(--border);padding:16px 0}.search-result h3{margin:6px 0}.server-search{margin-bottom:24px}
 @media(max-width:600px){.backend-result{padding:12px}.search-result{align-items:start;flex-direction:column}}
+
+.hazard-option { display:flex; align-items:flex-start; gap:10px; margin:12px 0; line-height:1.5; }
+.hazard-option input { width:18px; height:18px; flex:0 0 18px; margin-top:3px; }
+fieldset { border:1px solid var(--line); border-radius:12px; padding:16px; min-width:0; }

@@ -46,9 +46,10 @@ export function Report({ go, onSubmit, onSaveDraft, complaints: existingComplain
   const [f, setF] = useState(() => draft ? {
     ...draft,
     intakeKey: draft.intakeKey||crypto.randomUUID(),
+    hazards: draft.hazards||[],
     photos: (draft.photos || []).map((data) => ({ file: null, url: data, data })),
   } : {
-    ...(assisted?{channel:'assisted',language:'en',citizenUsername:'',phone:''}:{}),title: "", category: "", desc: "", ok: false, photos: [], ward: "", intakeKey: crypto.randomUUID(),
+    ...(assisted?{channel:'assisted',language:'en',citizenUsername:'',phone:''}:{}),title: "", category: "", desc: "", hazards: [], ok: false, photos: [], ward: "", intakeKey: crypto.randomUUID(),
     location: { latitude: null, longitude: null, accuracy: null, address: "" },
   });
   const [photoError, setPhotoError] = useState("");
@@ -156,6 +157,9 @@ export function Report({ go, onSubmit, onSaveDraft, complaints: existingComplain
               </select></div>
             <div className="field" style={{ marginBottom: 0 }}><label htmlFor="report-desc">Description *</label>
               <textarea id="report-desc" maxLength={4000} required value={f.desc} onChange={set("desc")} placeholder="What is the problem? Since when? Who is affected?" /></div>
+          </div>
+          <div className="card form-card">
+            <fieldset><legend>Reported hazards (optional)</legend><p>Choose only what you observed. The backend uses these reports to set priority and deadline; they are not verified hazards or an emergency dispatch service.</p>{Object.entries({open_manhole:'Open manhole',live_wire:'Live wire',unsafe_road:'Unsafe road',water_loss:'Water loss',blocked_access:'Blocked access'}).map(([code,label])=><label className="hazard-option" key={code}><input type="checkbox" checked={(f.hazards||[]).includes(code)} onChange={e=>setF(current=>({...current,hazards:e.target.checked?[...(current.hazards||[]),code]:(current.hazards||[]).filter(x=>x!==code)}))}/>{label}</label>)}</fieldset>
           </div>
           <div className="card form-card">
             <div className="field" style={{ marginBottom: 0 }}>

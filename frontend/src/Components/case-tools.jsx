@@ -1,7 +1,7 @@
 import {useRef,useState} from 'react';
 import {api} from '../api.js';
 export function CaseTools({c,user,onChange}){
- const [reason,setReason]=useState(''),[priority,setPriority]=useState('Medium'),[metric,setMetric]=useState('water_loss_litres'),[value,setValue]=useState(''),[contact,setContact]=useState(null),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false);
+ const [reason,setReason]=useState(''),[priority,setPriority]=useState(c.priority||'Medium'),[metric,setMetric]=useState('water_loss_litres'),[value,setValue]=useState(''),[contact,setContact]=useState(null),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false);
  const supervisor=user?.role==='supervisor',worker=supervisor||(user?.role==='official'&&user.username===c.officer);
  const lock=useRef(false);const run=async(fn)=>{if(lock.current)return;lock.current=true;setBusy(true);setError('');setNotice('');try{await fn();}catch(e){setError(e.message);}finally{lock.current=false;setBusy(false);}};
  if(!worker)return null;
