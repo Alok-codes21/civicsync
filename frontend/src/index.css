@@ -423,3 +423,5 @@ input.visually-hidden{min-height:0!important;max-width:1px!important;position:fi
 .logo-button { border: 0; padding: 0; background: transparent; text-align: left; color: var(--text); font: inherit; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .c-links a, .side nav a { text-decoration: none; }
+
+.backend-json{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;max-height:26rem;overflow:auto}.card details{margin:12px 0}.card select{max-width:100%}
