@@ -11,7 +11,8 @@
     "demo": "node scripts/demo.cjs",
     "build:web": "npm --prefix frontend ci && npm --prefix frontend run build",
     "start:web": "node scripts/serve-web.cjs",
-    "start:integrated": "node scripts/start-integrated.cjs"
+    "start:integrated": "node scripts/start-integrated.cjs",
+    "start:integrated:ai": "npm run setup:detector && npm run start:integrated"
   },
   "engines": {
     "node": "22.x || 24.x"
