@@ -19,7 +19,7 @@ function Workspace(){
  useEffect(()=>{api('/me').then(d=>setUser(d.user)).catch(e=>{if(e.status===401)setToken('');else setError('Backend unavailable. '+e.message);}).finally(()=>setReady(true));},[]);
  const refresh=useCallback(async()=>{
   const epoch=identity.current,request=++refreshGeneration.current;setLoading(true);try{
-   if(user){const d=await api(staff.includes(user.role)?'/work-queue':'/complaints?mine=true&limit=100');if(epoch===identity.current&&request===refreshGeneration.current){setList(d.complaints.map(adapt));setQueue(d);}}
+   if(user){const d=await api(staff.includes(user.role)&&user.role!=='intake'?'/work-queue':'/complaints?mine=true&limit=100');if(epoch===identity.current&&request===refreshGeneration.current){setList(d.complaints.map(adapt));setQueue(d);}}
    const d=await api('/complaints?limit=100');if(epoch===identity.current&&request===refreshGeneration.current)setPublicList(d.complaints.map(adapt));
   }catch(e){if(epoch===identity.current&&request===refreshGeneration.current)setError(e.message);}finally{if(epoch===identity.current&&request===refreshGeneration.current)setLoading(false);}
  },[user]);
