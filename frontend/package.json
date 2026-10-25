@@ -8,7 +8,7 @@
     "build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:integration": "node tests/storage.cjs && node tests/intake.cjs && node tests/dates.cjs && node tests/session.cjs && node tests/recovery.cjs && node tests/draft.cjs && node tests/reviewer.cjs && node tests/accessibility.cjs && node tests/pagination.cjs && node tests/cleanup.cjs && node tests/load-error.cjs && node tests/workflow-load-states.cjs && node tests/case-tools.cjs && node tests/related.cjs && node tests/service.cjs && node tests/operations.cjs && node tests/assisted.cjs && node tests/lookup.cjs",
+    "test:integration": "node tests/storage.cjs && node tests/intake.cjs && node tests/dates.cjs && node tests/session.cjs && node tests/recovery.cjs && node tests/draft.cjs && node tests/reviewer.cjs && node tests/accessibility.cjs && node tests/pagination.cjs && node tests/cleanup.cjs && node tests/load-error.cjs && node tests/workflow-load-states.cjs && node tests/case-tools.cjs && node tests/related.cjs && node tests/service.cjs && node tests/operations.cjs && node tests/assisted.cjs && node tests/lookup.cjs && node tests/qa.cjs",
     "test:hosting": "node tests/hosting.cjs && node tests/hosting-failure.cjs"
   },
   "dependencies": {

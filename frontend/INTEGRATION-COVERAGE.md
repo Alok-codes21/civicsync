@@ -15,8 +15,8 @@ The frontend uses the existing backend; server business logic, endpoints and sch
 
 ## Deliberate exclusions and limits
 - Destructive POST /privacy/retention is not exposed as an automatic or ordinary UI action. Operators must review privacy policy/backups before executing it separately. Arbitrary event creation returns410 and is not offered.
-- Backend list q/status parameters do not have a server-wide search form; existing screens filter loaded results. Offset pagination can shift during concurrent inserts. A refresh restarts the loaded list.
-- Service/metrics/reference panels are compact backend-result views, not fully designed analytics reports. No full Hindi UI, verified boundary/account mapping, actual municipality, OTP or SMS connection is implied.
+- Backend list q/status parameters have a separate server-wide search form for citizen/public lists, with pagination and applied filter labels. Existing loaded-list title filtering remains separate. Offset pagination can shift during concurrent inserts. A refresh restarts the loaded list.
+- Service/metrics/reference panels are structured readable backend-result views, not fully designed analytics reports. No full Hindi UI, verified boundary/account mapping, actual municipality, OTP or SMS connection is implied.
 - No model weights enabled, deployed host tested, production security/accessibility audit performed, or real citizen data used. Static test images do not evaluate the detector.
 - Local tests cover one or more examples of the connected workflows, not every role/state/concurrency combination. Impact has no server idempotency support: synchronous UI locks prevent rapid duplicate clicks but a lost successful response still needs operator reconciliation before retry.
 - Housing/storage/login approvals remain separate. SQLite durability, backups and production operation must be proven on the selected host before sharing it as live.
