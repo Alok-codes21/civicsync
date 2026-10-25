@@ -8,8 +8,8 @@
     "build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:integration": "node tests/storage.cjs && node tests/intake.cjs && node tests/dates.cjs && node tests/session.cjs && node tests/recovery.cjs && node tests/draft.cjs && node tests/reviewer.cjs && node tests/accessibility.cjs",
-    "test:hosting": "node tests/hosting.cjs"
+    "test:integration": "node tests/storage.cjs && node tests/intake.cjs && node tests/dates.cjs && node tests/session.cjs && node tests/recovery.cjs && node tests/draft.cjs && node tests/reviewer.cjs && node tests/accessibility.cjs && node tests/pagination.cjs && node tests/cleanup.cjs && node tests/load-error.cjs",
+    "test:hosting": "node tests/hosting.cjs && node tests/hosting-failure.cjs"
   },
   "dependencies": {
     "react": "^19.2.8",
