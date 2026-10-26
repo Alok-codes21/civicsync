@@ -38,7 +38,7 @@ function LandingAccess({ auth, onAuth, onSignOut, go, notice }) {
         <h2>{official ? "Official dashboard" : "Welcome to CivicSync"}</h2>
         <p>Signed in as <b>{auth.name || auth.email}</b></p>
         <button className="btn primary access-submit" onClick={() => go(official ? "overview" : "mine")}>
-          {official ? "Open official dashboard" : "Open public dashboard"} <LuArrowRight />
+          {official ? "Open official dashboard" : "Open my complaints"} <LuArrowRight />
         </button>
         {!official && <button className="btn access-submit" onClick={() => go("report")}>Report an issue</button>}
         <button className="access-signout" onClick={onSignOut}><LuLogOut /> Sign out</button>
@@ -57,7 +57,7 @@ function LandingAccess({ auth, onAuth, onSignOut, go, notice }) {
       </div>
       <form className="access-form" onSubmit={submit}>
         {mode === "signup" && <DemoNotice/>}
-        <p className="muted">Your backend account determines your role.</p>
+        <p className="muted">Your account determines which role you can use.</p>
         {mode === "signup" && (
           <>
             <label htmlFor="access-name">Name</label>
@@ -74,7 +74,7 @@ function LandingAccess({ auth, onAuth, onSignOut, go, notice }) {
         {(error || notice) && <span className="access-error" role="alert">{error || notice}</span>}
         <button disabled={busy} className="btn primary access-submit" type="submit">{mode === "signin" ? "Sign in" : "Create account"} <LuArrowRight /></button>
       </form>
-      <small className="access-disclaimer">Credentials are checked by the CivicSync backend. Only citizens can create accounts; staff accounts must already exist.</small>
+      <small className="access-disclaimer">CivicSync checks your sign-in details. Only citizens can create accounts; staff accounts must already exist.</small>
     </aside>
   );
 }
@@ -82,7 +82,7 @@ function LandingAccess({ auth, onAuth, onSignOut, go, notice }) {
 export default function Landing({ go, theme, toggle, auth, onAuth, onSignOut, notice }) {
   const cards = [
     [LuUser, "Citizen Portal", "Report an issue in seconds, track it live, and watch missed deadlines climb to higher authority.", "report"],
-    [LuBuilding2, "Official Dashboard", "Assigned complaints, deadline countdowns, escalation alerts and resolution verification in one console.", "overview"],
+    [LuBuilding2, auth?.role === "public" ? "Staff dashboard (staff sign-in required)" : "Official Dashboard", auth?.role === "public" ? "You are signed in as a citizen. Sign out above and sign in with a staff account to use this dashboard." : "Assigned complaints, deadlines, internal escalations and repair review. Staff sign-in required.", auth?.role === "public" ? "landing" : "overview"],
     [LuGlobe, "Public Dashboard", "Open city statistics, department performance and a public complaint feed. Transparency for everyone.", "public"],
   ];
   return (
@@ -101,7 +101,7 @@ export default function Landing({ go, theme, toggle, auth, onAuth, onSignOut, no
               <div className="eyebrow" style={{ color: "var(--accent)", letterSpacing: "0.2em" }}>Civic Issue Escalation System</div>
               <h1>Your neighbourhood.<br />Your voice, <em>followed through.</em></h1>
               <p className="lead">
-                Report civic issues, track backend deadlines and review repair evidence. A local prototype, not a connected government service.
+                Report civic issues, track response deadlines and review repair evidence. A local prototype, not a connected government service.
               </p>
               <div className="chips">
                 <span><LuMapPin /> Optional GPS</span>

@@ -131,7 +131,7 @@ export function OfficialShell({ page, go, theme, toggle, children, onSignOut, au
     <div className="o-shell">
       <aside className="side">
         <Logo sub="Official Console" onClick={() => go("landing")} />
-        <nav><Link to="/operations" className="item">Backend metrics</Link><Link to="/service" className="item">Service info</Link>
+        <nav><Link to="/operations" className="item">Complaint insights</Link><Link to="/service" className="item">Service info</Link>
           {nav.map(([k, l, I]) => (
             <Link key={k} to={k==='landing'?'/':'/'+k} aria-current={page===k?'page':undefined} className={page === k ? "active" : ""}><I size={18} /> {l}</Link>
           ))}
@@ -145,7 +145,7 @@ export function OfficialShell({ page, go, theme, toggle, children, onSignOut, au
           </div>
         </div>
       </aside>
-      <nav className="official-mobile-nav" aria-label="Official dashboard"><Link to="/service" className="btn sm">Service info</Link><Link to="/operations" className="btn sm">Backend metrics</Link>{auth?.role==='intake'&&<Link to="/report" className="btn sm">Assisted intake</Link>}<button className="btn sm" aria-label="Sign out (mobile)" onClick={onSignOut}>Sign out</button><ThemeBtn theme={theme} toggle={toggle}/>
+      <nav className="official-mobile-nav" aria-label="Official dashboard"><Link to="/service" className="btn sm">Service info</Link><Link to="/operations" className="btn sm">Complaint insights</Link>{auth?.role==='intake'&&<Link to="/report" className="btn sm">Assisted intake</Link>}<button className="btn sm" aria-label="Sign out (mobile)" onClick={onSignOut}>Sign out</button><ThemeBtn theme={theme} toggle={toggle}/>
         {nav.map(([key, label, Icon]) => (
           <button key={key} className={`btn sm ${page === key ? "soft" : ""}`} onClick={() => go(key)}>
             <Icon size={15} /> {label}

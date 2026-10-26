@@ -91,7 +91,7 @@ export function Report({ go, onSubmit, onSaveDraft, complaints: existingComplain
       (error) => {
         setLocationError(error.code === error.PERMISSION_DENIED
           ? "Location permission was denied. Allow access in your browser settings or enter an address."
-          : "Could not get your location. Try again or enter an address.");
+          : "The browser could not find your location. You can still submit by typing a location or address above.");
         setLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
@@ -148,7 +148,7 @@ export function Report({ go, onSubmit, onSaveDraft, complaints: existingComplain
       <DemoNotice upload/><form className="form-grid" onSubmit={submit}>
         <div>
           <div className="card form-card">
-            {assisted&&<section><h2>Assisted intake</h2><p>Use a known citizen username, or leave blank for an unclaimed report. No claim/recovery or SMS verification is available. Language metadata does not translate this form.</p><label className="field">Citizen username (optional)<input value={f.citizenUsername||''} onChange={set('citizenUsername')}/></label><label className="field">Intake channel<select value={f.channel||'assisted'} onChange={set('channel')}>{['assisted','phone','desk','offline'].map(x=><option key={x}>{x}</option>)}</select></label><label className="field">Report language<select value={f.language||'en'} onChange={set('language')}><option value="en">English</option><option value="hi">Hindi (limited backend messages)</option></select></label><label className="field">Citizen phone (optional, unverified)<input type="tel" value={f.phone||''} onChange={set('phone')}/></label></section>}
+            {assisted&&<section><h2>Assisted intake</h2><p>Use a known citizen username, or leave blank for an unclaimed report. No claim/recovery or SMS verification is available. Language metadata does not translate this form.</p><label className="field">Citizen username (optional)<input value={f.citizenUsername||''} onChange={set('citizenUsername')}/></label><label className="field">Intake channel<select value={f.channel||'assisted'} onChange={set('channel')}>{['assisted','phone','desk','offline'].map(x=><option key={x}>{x}</option>)}</select></label><label className="field">Report language<select value={f.language||'en'} onChange={set('language')}><option value="en">English</option><option value="hi">Hindi (some service messages only)</option></select></label><label className="field">Citizen phone (optional, unverified)<input type="tel" value={f.phone||''} onChange={set('phone')}/></label></section>}
             <div className="field"><label htmlFor="report-title">Complaint title *</label>
               <input id="report-title" maxLength={140} required value={f.title} onChange={set("title")} placeholder="e.g. Deep pothole near the market crossing" /></div>
             <div className="field"><label htmlFor="report-category">Category *</label>
@@ -160,7 +160,7 @@ export function Report({ go, onSubmit, onSaveDraft, complaints: existingComplain
               <textarea id="report-desc" maxLength={4000} required value={f.desc} onChange={set("desc")} placeholder="What is the problem? Since when? Who is affected?" /></div>
           </div>
           <div className="card form-card">
-            <fieldset><legend>Reported hazards (optional)</legend><p>Choose only what you observed. The backend uses these reports to set priority and deadline; they are not verified hazards or an emergency dispatch service.</p>{Object.entries({open_manhole:'Open manhole',live_wire:'Live wire',unsafe_road:'Unsafe road',water_loss:'Water loss',blocked_access:'Blocked access'}).map(([code,label])=><label className="hazard-option" key={code}><input type="checkbox" checked={(f.hazards||[]).includes(code)} onChange={e=>setF(current=>({...current,hazards:e.target.checked?[...(current.hazards||[]),code]:(current.hazards||[]).filter(x=>x!==code)}))}/>{label}</label>)}</fieldset>
+            <fieldset><legend>Reported hazards (optional)</legend><p>Choose only what you observed. These reports help set the complaint priority and response deadline; they are not verified hazards or an emergency dispatch service.</p>{Object.entries({open_manhole:'Open manhole',live_wire:'Live wire',unsafe_road:'Unsafe road',water_loss:'Water loss',blocked_access:'Blocked access'}).map(([code,label])=><label className="hazard-option" key={code}><input type="checkbox" checked={(f.hazards||[]).includes(code)} onChange={e=>setF(current=>({...current,hazards:e.target.checked?[...(current.hazards||[]),code]:(current.hazards||[]).filter(x=>x!==code)}))}/>{label}</label>)}</fieldset>
           </div>
           <div className="card form-card">
             <div className="field" style={{ marginBottom: 0 }}>
@@ -207,7 +207,7 @@ export function Report({ go, onSubmit, onSaveDraft, complaints: existingComplain
             <div style={{ marginTop: 14 }}>
               <MapBox label={f.location.latitude != null
                 ? `${f.location.latitude.toFixed(4)}, ${f.location.longitude.toFixed(4)}`
-                : f.location.address || "Location preview"} />
+                : f.location.address || "Enter a location above. No GPS location selected."} />
             </div>
           </div>
         </div>
@@ -224,7 +224,7 @@ export function Report({ go, onSubmit, onSaveDraft, complaints: existingComplain
             {duplicateMatches && (
               <div className="duplicate-results" aria-live="polite">
                 {duplicateMatches.length === 0
-                  ? <p className="muted">No local suggestions available. Backend duplicate candidates are returned after submission.</p>
+                  ? <p className="muted">No suggestions from the currently loaded reports. More possible related complaints are checked after submission.</p>
                   : <>
                     <p className="muted">{duplicateMatches.length} possible {duplicateMatches.length === 1 ? "match" : "matches"}:</p>
                     {duplicateMatches.slice(0, 5).map((complaint) => (
@@ -297,7 +297,7 @@ export function Success({ c, go }) {
     <div className="success">
       <div className="check-circle"><LuCheck /></div>
       <h1>Complaint registered</h1>
-      <p className="lead">Saved by the backend. Ownership and routing may still need manual review. Updates are available inside this prototype.</p>
+      <p className="lead">Your complaint is saved. Assignment and routing may still need manual review. Updates are available inside this prototype.</p>
       <div className="card reg-card">
         <div className="reg-head">
           <div><div className="eyebrow">Complaint ID</div><div className="reg-id">{c.id}</div></div>
@@ -306,7 +306,7 @@ export function Success({ c, go }) {
         <div className="reg-line"><LuMapPin /> {c.ward}</div>
         <div className="reg-line"><LuFileText /> {c.category}</div>
         <div className="deadline-note">
-          Expected response deadline: <b>{c.deadline}</b> (backend-calculated). Overdue cases enter the internal escalation queue.
+          Expected response deadline: <b>{c.deadline}</b> (calculated by the service). Overdue cases enter the internal escalation queue.
         </div>
       </div>
       <div className="actions-grid">
@@ -567,7 +567,7 @@ function downloadSummary(complaint) {
 }
 
 export function GrievanceDialog({ complaint, onClose }) {
-  return <div className="dialog-backdrop"><section className="card grievance-dialog" role="dialog" aria-modal="true" aria-labelledby="grievance-title"><h2 id="grievance-title">Grievance submission unavailable</h2><p>No grievance service is connected. Nothing has been sent and no official has been notified.</p><p>Open complaint {complaint.id} to see the backend timeline. Repair disputes and reopen actions, when allowed, are available there.</p><button className="btn" onClick={onClose}>Close</button></section></div>;
+  return <div className="dialog-backdrop"><section className="card grievance-dialog" role="dialog" aria-modal="true" aria-labelledby="grievance-title"><h2 id="grievance-title">Grievance submission unavailable</h2><p>No grievance service is connected. Nothing has been sent and no official has been notified.</p><p>Open complaint {complaint.id} to see its progress timeline. Repair disputes and reopen actions, when allowed, are available there.</p><button className="btn" onClick={onClose}>Close</button></section></div>;
 }
 
 export function PublicDashboard({ complaints: complaintList, go, role }) {
