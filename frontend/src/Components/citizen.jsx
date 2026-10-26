@@ -1,3 +1,4 @@
+import DemoNotice from "./demo-notice";
 import { useEffect, useRef, useState } from "react";
 import {
   LuArrowLeft, LuSearch, LuCamera, LuUpload, LuSave, LuMapPin, LuCheck, LuCopy,
@@ -144,7 +145,7 @@ export function Report({ go, onSubmit, onSaveDraft, complaints: existingComplain
       <Back onClick={cancel} />
       <h1 className="page-title">Report a Complaint</h1>
       <p className="page-sub">Fields marked * are required. Add a location to help the right team find the issue.</p>
-      <form className="form-grid" onSubmit={submit}>
+      <DemoNotice upload/><form className="form-grid" onSubmit={submit}>
         <div>
           <div className="card form-card">
             {assisted&&<section><h2>Assisted intake</h2><p>Use a known citizen username, or leave blank for an unclaimed report. No claim/recovery or SMS verification is available. Language metadata does not translate this form.</p><label className="field">Citizen username (optional)<input value={f.citizenUsername||''} onChange={set('citizenUsername')}/></label><label className="field">Intake channel<select value={f.channel||'assisted'} onChange={set('channel')}>{['assisted','phone','desk','offline'].map(x=><option key={x}>{x}</option>)}</select></label><label className="field">Report language<select value={f.language||'en'} onChange={set('language')}><option value="en">English</option><option value="hi">Hindi (limited backend messages)</option></select></label><label className="field">Citizen phone (optional, unverified)<input type="tel" value={f.phone||''} onChange={set('phone')}/></label></section>}

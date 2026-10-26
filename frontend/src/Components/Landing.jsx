@@ -1,3 +1,4 @@
+import DemoNotice from "./demo-notice";
 import { useState } from "react";
 import { LuMapPin, LuTimer, LuShieldCheck, LuUser, LuBuilding2, LuGlobe, LuArrowRight, LuLogOut } from "react-icons/lu";
 import { Logo, ThemeBtn } from "./ui";
@@ -55,6 +56,7 @@ function LandingAccess({ auth, onAuth, onSignOut, go, notice }) {
         <button type="button" className={mode === "signup" ? "selected" : ""} onClick={() => { setMode("signup"); setError(""); }}>Sign up</button>
       </div>
       <form className="access-form" onSubmit={submit}>
+        {mode === "signup" && <DemoNotice/>}
         <p className="muted">Your backend account determines your role.</p>
         {mode === "signup" && (
           <>

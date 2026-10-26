@@ -2,8 +2,8 @@
 const fs = require('node:fs');
 const file = require('node:path').join(__dirname, '../frontend/dist/index.html');
 let html = fs.readFileSync(file, 'utf8');
-if (!html.includes('civic-free-demo-notice')) {
-  html = html.replace('<title>project</title>', '<title>CivicSync - Temporary Demo</title>');
-  html = html.replace('<body>', '<body><aside id="civic-free-demo-notice" role="note" style="padding:10px 16px;background:#fff2cc;color:#392c0a;font:14px/1.5 system-ui;text-align:center;border-bottom:1px solid #d6bd74">Temporary demo - synthetic data only. Do not enter personal information or real citizen photos. Data can disappear on restart or redeploy. Photo AI detector is disabled. Demo login: alok / demo123.</aside>');
+if (!html.includes('civic-free-demo-info')) {
+  html = html.replace('<title>project</title>', '<title>CivicSync - Demo</title>');
+  html = html.replace('<body>', '<body><script>window.__CIVIC_FREE_DEMO__=true;</script><details id="civic-free-demo-info" style="padding:5px 16px;background:#edf3ef;color:#344d43;font:12px/1.5 system-ui;border-bottom:1px solid #d5e2db"><summary style="cursor:pointer;width:max-content">Demo info</summary><p style="margin:6px 0">Synthetic test data only. Do not enter personal information or real citizen photos. Data can disappear on restart or redeploy. Photo AI detector is disabled. No municipal connection. This prototype is not a production service.</p></details>');
   fs.writeFileSync(file, html);
 }
