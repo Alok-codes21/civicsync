@@ -1,4 +1,4 @@
 export default function DemoNotice({upload=false}) {
   if (!window.__CIVIC_FREE_DEMO__) return null;
-  return <p className="muted" role="note" style={{fontSize:12,lineHeight:1.5,margin:'8px 0'}}>Use synthetic test data only. No personal details or real citizen photos. Data is temporary.{upload&&' Photo AI detector is off; uploads receive basic checks and human review only.'}</p>;
+  return <p className="muted" role="note" style={{fontSize:12,lineHeight:1.5,margin:'8px 0'}}>Use synthetic test data only. No personal details or real citizen photos. Data is temporary.{upload&&(window.__CIVIC_AI_DETECTOR__?' Photo AI detector is on: it gives an experimental, unvalidated score as a hint only. Every photo still goes to human review.':' Photo AI detector is off; uploads receive basic checks and human review only.')}</p>;
 }
