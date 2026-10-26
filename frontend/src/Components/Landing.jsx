@@ -2,7 +2,7 @@ import { useState } from "react";
 import { LuMapPin, LuTimer, LuShieldCheck, LuUser, LuBuilding2, LuGlobe, LuArrowRight, LuLogOut } from "react-icons/lu";
 import { Logo, ThemeBtn } from "./ui";
 
-function LandingAccess({ auth, onAuth, onSignOut, go }) {
+function LandingAccess({ auth, onAuth, onSignOut, go, notice }) {
   
   const [mode, setMode] = useState("signin");
   const [name, setName] = useState("");
@@ -16,8 +16,13 @@ function LandingAccess({ auth, onAuth, onSignOut, go }) {
       setError("Enter your name to create a profile.");
       return;
     }
-    if (password.length < (mode === "signup" ? 12 : 1)) {
-      setError("Signup needs at least 12 characters.");
+    if (mode === "signup" && !/^[a-z0-9_-]{3,60}$/i.test(email.trim())) {
+      setError("Use 3-60 letters, numbers, underscores or hyphens for your username, not an email address.");
+      return;
+    }
+    setError("");
+    if (password.length < (mode === "signup" ? 12 : 1) || password.length > 128) {
+      setError("Signup password must be 12-128 characters.");
       return;
     }
     setBusy(true);
@@ -59,10 +64,12 @@ function LandingAccess({ auth, onAuth, onSignOut, go }) {
         )}
         <label htmlFor="access-email">Username</label>
         <input id="access-email" type="text" required value={email} onChange={(event) => setUsername(event.target.value)} placeholder="your_username" />
+        {mode === "signup" && <small id="username-help">3-60 letters, numbers, underscores or hyphens. Not an email address.</small>}
         <label htmlFor="access-password">Password</label>
-        <input id="access-password" type="password" required minLength={mode === "signup" ? 12 : 1} value={password}
+        <input id="access-password" type="password" required maxLength={128} minLength={mode === "signup" ? 12 : 1} value={password}
           onChange={(event) => setPassword(event.target.value)} placeholder={mode === "signup" ? "At least 12 characters" : "Your password"} />
-        {error && <span className="access-error" role="alert">{error}</span>}
+        {mode === "signup" && <small>12-128 characters. No special character required. Use a test-only password for this temporary demo.</small>}
+        {(error || notice) && <span className="access-error" role="alert">{error || notice}</span>}
         <button disabled={busy} className="btn primary access-submit" type="submit">{mode === "signin" ? "Sign in" : "Create account"} <LuArrowRight /></button>
       </form>
       <small className="access-disclaimer">Credentials are checked by the CivicSync backend. Only citizens can create accounts; staff accounts must already exist.</small>
@@ -100,9 +107,9 @@ export default function Landing({ go, theme, toggle, auth, onAuth, onSignOut, no
                 <span><LuShieldCheck /> Escalation tracking</span>
               </div>
             </div>
-            <LandingAccess auth={auth} onAuth={onAuth} onSignOut={onSignOut} go={go} />
+            <LandingAccess notice={notice} auth={auth} onAuth={onAuth} onSignOut={onSignOut} go={go} />
           </div>
-          {notice && <div className="access-notice" role="status">{notice}</div>}
+
           <div className="portal-grid">
             {cards.map(([I, t, d, to]) => (
               <button key={t} className="card portal" onClick={() => go(to)}>
