@@ -27,7 +27,7 @@ test('multi-zone ward (38) and ambiguous categories still go to Routing Review',
 test('seeded route assigns the demo account, flagged unverified, never shown as real staff',async()=>{
  const c=await file('Garbage Collection','Ghaziabad Ward 50')
  assert.equal(c.status,'Assigned');assert.equal(c.officer,'verma');assert.equal(c.routeVerified,0);assert.match(c.dept,/DEMO/);assert.ok(c.reasons.includes('JURISDICTION_UNVERIFIED'))
- const u=db.prepare("SELECT name,role FROM users WHERE username='verma'").get();assert.equal(u.name,'Demo officer')
+ const u=db.prepare("SELECT name,role FROM users WHERE username='verma'").get();assert.equal(u.name,'Verma (demo officer)')
 })
 test('flag is off by default: no routes without DEMO_GHAZIABAD_ROUTES',()=>{
  const {spawnSync}=require('child_process')
